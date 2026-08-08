@@ -5,6 +5,9 @@ import java.util.Scanner;
 public class Main {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
+        GameFrame window = new GameFrame();
+        window.setVisible(true);
+        window.startGame();
 
         while (true) {
             printMainMenu();
@@ -18,19 +21,24 @@ public class Main {
             switch (choice) {
                 case "1" -> {
                     System.out.println("\nLaunching Space Shooter HD...");
-                    startGame();
+                    window.beginGameplay();
                     return;
                 }
                 case "2" -> {
+                    window.showInstructions();
                     printInstructions();
                     waitForEnter(scanner);
+                    window.showMainMenu();
                 }
                 case "3" -> {
+                    window.showControls();
                     printControls();
                     waitForEnter(scanner);
+                    window.showMainMenu();
                 }
                 case "4" -> {
                     System.out.println("\nThanks for playing Space Shooter HD!");
+                    window.closeGame();
                     return;
                 }
                 default -> {
@@ -87,9 +95,4 @@ public class Main {
         System.out.println();
     }
 
-    private static void startGame() {
-        GameFrame window = new GameFrame();
-        window.setVisible(true);
-        window.startGame();
-    }
 }

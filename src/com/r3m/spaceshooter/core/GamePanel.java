@@ -126,6 +126,23 @@ public class GamePanel extends JPanel implements Runnable {
     	}
     }
 
+    public void beginGameplay() {
+        gameController.beginGameplay();
+        requestFocusInWindow();
+    }
+
+    public void showMainMenu() {
+        gameController.showMainMenu();
+    }
+
+    public void showInstructions() {
+        gameController.showInstructions();
+    }
+
+    public void showControls() {
+        gameController.showControls();
+    }
+
     @Override
     public void run() {
         /**
