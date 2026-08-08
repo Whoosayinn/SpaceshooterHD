@@ -12,6 +12,7 @@ public class Main {
         while (true) {
             printMainMenu();
             System.out.print("Choose an option (1-4): ");
+            System.out.flush();
 
             if (!scanner.hasNextLine()) {
                 return;
