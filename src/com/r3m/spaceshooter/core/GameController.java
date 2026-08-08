@@ -1,6 +1,7 @@
 package com.r3m.spaceshooter.core;
 
 import com.r3m.spaceshooter.entity.Asteroid;
+import com.r3m.spaceshooter.entity.Explosion;
 import com.r3m.spaceshooter.system.AssetManager;
 import com.r3m.spaceshooter.system.CollisionManager;
 import com.r3m.spaceshooter.system.InputManager;
@@ -11,9 +12,11 @@ import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 public class GameController {
 	/**
@@ -73,6 +76,27 @@ public class GameController {
     private int playerLives = STARTING_LIVES;
     private double collisionInvulnerabilityRemaining;
 
+    
+	 // current velocity — how fast the ship is moving in each direction
+	 // persists between frames — this is what creates the inertia effect
+	 private double velocityX = 0;
+	 private double velocityY = 0;
+	 
+	// maximum speed the ship can reach in pixels per second
+	 private static final double MAX_SPEED = 400;
+	 
+	// how fast the ship accelerates when a key is held, pixels per second²
+	 private static final double ACCELERATION = 1200;
+
+	 // friction multiplier applied every frame when no key is pressed
+	 // 0.88 means velocity loses 12% per frame — feels like ice
+	 // closer to 1.0 = icier, closer to 0.0 = more grippy
+	 private static final double FRICTION = 0.98;
+
+	 // threshold below which velocity snaps to zero
+	 // prevents the ship from drifting forever at imperceptibly small speeds
+	 private static final double STOP_THRESHOLD = 0.1;
+    
     // --- ASTEROID STATE ---
 
     private static final double ASTEROID_SPAWN_INTERVAL = 0.5;
@@ -81,8 +105,12 @@ public class GameController {
     private static final double ASTEROID_MIN_VERTICAL_SPEED = 50.0;
     private static final double ASTEROID_VERTICAL_SPEED_RANGE = 90.0;
     private static final double STRAIGHT_ASTEROID_CHANCE = 0.35;
+    private static final double FRAGMENT_COLLISION_GRACE_SECONDS = 0.4;
+    private static final double FRAGMENT_MIN_SPREAD_SPEED = 90.0;
+    private static final double FRAGMENT_SPREAD_SPEED_RANGE = 70.0;
 
     private final List<Asteroid> asteroids = new ArrayList<>();
+    private final List<Explosion> explosions = new ArrayList<>();
     private final Random random = new Random();
     private final BufferedImage asteroidImage;
     private double asteroidSpawnTimer = ASTEROID_SPAWN_INTERVAL;
@@ -160,15 +188,33 @@ public class GameController {
             // then multiply by PLAYER_SPEED to apply intended speed
             // then multiply by deltaTime to make it frame-rate independent
             // result: player always moves at exactly PLAYER_SPEED pixels/second
-            dx = (dx / length) * PLAYER_SPEED * deltaTime;
-            dy = (dy / length) * PLAYER_SPEED * deltaTime;
+            dx = (dx / length);
+            dy = (dy / length);
+            
+            velocityX += dx * ACCELERATION * deltaTime;
+            velocityY += dy * ACCELERATION * deltaTime;
+            
+            // clamp to max speed
+            double currentSpeed = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
+            if (currentSpeed > MAX_SPEED) {
+                velocityX = (velocityX / currentSpeed) * MAX_SPEED;
+                velocityY = (velocityY / currentSpeed) * MAX_SPEED;
+            }
+        } else {
+            // no key held — apply friction
+            velocityX *= FRICTION;
+            velocityY *= FRICTION;
+
+            // snap to zero to prevent infinite drift
+            if (Math.abs(velocityX) < STOP_THRESHOLD) velocityX = 0;
+            if (Math.abs(velocityY) < STOP_THRESHOLD) velocityY = 0;
         }
 
         // --- Step 3: Apply movement ---
         // add the calculated displacement to the current position
         // playerX and playerY are doubles so sub-pixel precision is preserved
-        playerX += dx;
-        playerY += dy;
+        playerX += velocityX * deltaTime;
+        playerY += velocityY * deltaTime;
 
         // --- Step 4: Clamp to screen bounds ---
         // prevents the player from moving outside the visible game area
@@ -177,10 +223,10 @@ public class GameController {
         // Math.min(..., panelWidth - 32) stops at the right edge
         // the - 32 accounts for the player's own width so the RIGHT edge of the
         // ship stays on screen, not just the left edge
-        playerX = Math.max(0, Math.min(playerX, panelWidth - PLAYER_WIDTH));
+        playerX = Math.max(0, Math.min(playerX, panelWidth - 32));
         
         // same clamping for vertical — - 32 accounts for player height
-        playerY = Math.max(0, Math.min(playerY, panelHeight - PLAYER_HEIGHT));
+        playerY = Math.max(0, Math.min(playerY, panelHeight - 32));
 
         updateAsteroids(deltaTime);
         
@@ -222,6 +268,90 @@ public class GameController {
                 if (collisionManager.isColliding(getPlayerBounds(), asteroid.getBounds())) {
                     iterator.remove();
                     damagePlayer();
+                }
+            }
+
+            resolveAsteroidCollisions();
+        }
+
+        updateExplosions(deltaTime);
+    }
+
+    private void resolveAsteroidCollisions() {
+        Set<Asteroid> destroyedAsteroids = new HashSet<>();
+        List<Asteroid> fragments = new ArrayList<>();
+
+        for (int firstIndex = 0; firstIndex < asteroids.size(); firstIndex++) {
+            Asteroid first = asteroids.get(firstIndex);
+            if (destroyedAsteroids.contains(first) || !first.canCollideWithAsteroids()) {
+                continue;
+            }
+
+            for (int secondIndex = firstIndex + 1; secondIndex < asteroids.size(); secondIndex++) {
+                Asteroid second = asteroids.get(secondIndex);
+                if (destroyedAsteroids.contains(second) || !second.canCollideWithAsteroids()) {
+                    continue;
+                }
+
+                if (!collisionManager.isColliding(first.getBounds(), second.getBounds())) {
+                    continue;
+                }
+
+                destroyedAsteroids.add(first);
+                destroyedAsteroids.add(second);
+                createExplosion(
+                    (first.getCenterX() + second.getCenterX()) / 2.0,
+                    (first.getCenterY() + second.getCenterY()) / 2.0
+                );
+                addFragments(first, fragments);
+                addFragments(second, fragments);
+                break;
+            }
+        }
+
+        asteroids.removeAll(destroyedAsteroids);
+        asteroids.addAll(fragments);
+    }
+
+    private void addFragments(Asteroid parent, List<Asteroid> fragments) {
+        if (!parent.canSplit()) {
+            return;
+        }
+
+        int fragmentSize = parent.getFragmentSize();
+        for (int direction : new int[] {-1, 1}) {
+            double spreadSpeed = FRAGMENT_MIN_SPREAD_SPEED
+                + random.nextDouble() * FRAGMENT_SPREAD_SPEED_RANGE;
+            double fragmentVelocityX = parent.getVelocityX()
+                * (0.9 + random.nextDouble() * 0.2);
+            double fragmentVelocityY = parent.getVelocityY() + direction * spreadSpeed;
+
+            fragments.add(new Asteroid(
+                asteroidImage,
+                parent.getCenterX() - fragmentSize / 2.0,
+                parent.getCenterY() - fragmentSize / 2.0,
+                fragmentVelocityX,
+                fragmentVelocityY,
+                fragmentSize,
+                FRAGMENT_COLLISION_GRACE_SECONDS
+            ));
+        }
+    }
+
+    private void createExplosion(double centerX, double centerY) {
+        synchronized (explosions) {
+            explosions.add(new Explosion(centerX, centerY, random));
+        }
+    }
+
+    private void updateExplosions(double deltaTime) {
+        synchronized (explosions) {
+            Iterator<Explosion> iterator = explosions.iterator();
+            while (iterator.hasNext()) {
+                Explosion explosion = iterator.next();
+                explosion.update(deltaTime);
+                if (explosion.isFinished()) {
+                    iterator.remove();
                 }
             }
         }
@@ -299,6 +429,12 @@ public class GameController {
         synchronized (asteroids) {
             for (Asteroid asteroid : asteroids) {
                 asteroid.render(g);
+            }
+        }
+
+        synchronized (explosions) {
+            for (Explosion explosion : explosions) {
+                explosion.render(g);
             }
         }
 
