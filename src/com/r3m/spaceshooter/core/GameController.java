@@ -63,6 +63,9 @@ public class GameController {
     // declared as double because it's multiplied by deltaTime (a double) every frame
     // at 60fps: 500 * 0.01666 = ~8.3 pixels per frame
     private static final int PLAYER_SPEED = 500;
+    private static final int PLAYER_WIDTH = 64;
+    private static final int PLAYER_HEIGHT = 56;
+    private final BufferedImage spaceshipImage;
 
     // --- ASTEROID STATE ---
 
@@ -97,6 +100,7 @@ public class GameController {
         this.collisionManager = new CollisionManager();
         this.assetManager = AssetManager.getInstance();
         this.scoreManager = new ScoreManager();
+        this.spaceshipImage = assetManager.loadImage("/assets/spaceship.png");
         this.asteroidImage = assetManager.loadImage("/assets/asteroid.png");
     }
 
@@ -159,10 +163,10 @@ public class GameController {
         // Math.min(..., panelWidth - 32) stops at the right edge
         // the - 32 accounts for the player's own width so the RIGHT edge of the
         // ship stays on screen, not just the left edge
-        playerX = Math.max(0, Math.min(playerX, panelWidth - 32));
+        playerX = Math.max(0, Math.min(playerX, panelWidth - PLAYER_WIDTH));
         
         // same clamping for vertical — - 32 accounts for player height
-        playerY = Math.max(0, Math.min(playerY, panelHeight - 32));
+        playerY = Math.max(0, Math.min(playerY, panelHeight - PLAYER_HEIGHT));
 
         updateAsteroids(deltaTime);
         
@@ -218,16 +222,19 @@ public class GameController {
          * @param g the Graphics2D paintbrush — use it to draw shapes, images, text
          */
     	
-        // set the drawing color to green for the placeholder ship
-        // every draw call after this uses green until setColor is called again
-        g.setColor(Color.GREEN);
+        // Draw the player sprite at its current movement position.
 
-        // draw the placeholder ship as a filled green rectangle
         // cast double positions to int — screen pixels must be whole numbers
-        // the fractional part is preserved in playerX/playerY for smooth movement
-        // only discarded at the last moment here when handing to the screen
-        // arguments: x position, y position, width, height
-        g.fillOval((int) playerX, (int) playerY, 48, 32);
+        if (spaceshipImage != null) {
+            g.drawImage(
+                spaceshipImage,
+                (int) playerX,
+                (int) playerY,
+                PLAYER_WIDTH,
+                PLAYER_HEIGHT,
+                null
+            );
+        }
 
         synchronized (asteroids) {
             for (Asteroid asteroid : asteroids) {
