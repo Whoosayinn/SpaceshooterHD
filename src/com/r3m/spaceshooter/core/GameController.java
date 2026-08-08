@@ -2,11 +2,13 @@ package com.r3m.spaceshooter.core;
 
 import com.r3m.spaceshooter.entity.Asteroid;
 import com.r3m.spaceshooter.entity.Explosion;
+import com.r3m.spaceshooter.entity.Star;
 import com.r3m.spaceshooter.system.AssetManager;
 import com.r3m.spaceshooter.system.CollisionManager;
 import com.r3m.spaceshooter.system.InputManager;
 import com.r3m.spaceshooter.system.ScoreManager;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
@@ -31,6 +33,13 @@ public class GameController {
 	 * it orchestrates game logic but does NOT manage the window,
 	 * the game loop, or keyboard events directly.
 	 */
+
+    private enum GameState {
+        MENU,
+        PLAYING
+    }
+
+    private GameState gameState = GameState.MENU;
 	
     // --- SCREEN BOUNDARIES ---
 
@@ -111,9 +120,14 @@ public class GameController {
 
     private final List<Asteroid> asteroids = new ArrayList<>();
     private final List<Explosion> explosions = new ArrayList<>();
+    private final List<Star> stars = new ArrayList<>();
     private final Random random = new Random();
     private final BufferedImage asteroidImage;
     private double asteroidSpawnTimer = ASTEROID_SPAWN_INTERVAL;
+
+    private static final int STAR_COUNT = 120;
+    private static final double STAR_MIN_SPEED = 60.0;
+    private static final double STAR_SPEED_RANGE = 180.0;
 
     public GameController(InputManager inputManager, int panelWidth, int panelHeight) {
         /**
@@ -139,6 +153,7 @@ public class GameController {
         this.scoreManager = new ScoreManager();
         this.spaceshipImage = assetManager.loadImage("/assets/spaceship.png");
         this.asteroidImage = assetManager.loadImage("/assets/asteroid.png");
+        createInitialStars();
     }
 
     public void update(double deltaTime) {
@@ -151,7 +166,17 @@ public class GameController {
          *                  multiply all movement by this to keep speed
          *                  consistent regardless of frame rate
          */
-    	
+
+        // The starfield keeps moving both in the menu and during gameplay.
+        updateStars(deltaTime);
+
+        if (gameState == GameState.MENU) {
+            if (inputManager.isSpacePressed()) {
+                startNewGame();
+            }
+            return;
+        }
+
         collisionInvulnerabilityRemaining = Math.max(
             0.0,
             collisionInvulnerabilityRemaining - deltaTime
@@ -244,6 +269,59 @@ public class GameController {
 
         panelWidth = width;
         panelHeight = height;
+    }
+
+    private void createInitialStars() {
+        synchronized (stars) {
+            for (int i = 0; i < STAR_COUNT; i++) {
+                stars.add(createStar(random.nextInt(Math.max(1, panelWidth))));
+            }
+        }
+    }
+
+    private Star createStar(double x) {
+        double y = random.nextInt(Math.max(1, panelHeight));
+        double speed = STAR_MIN_SPEED + random.nextDouble() * STAR_SPEED_RANGE;
+        int size = 1 + random.nextInt(3);
+        return new Star(x, y, speed, size);
+    }
+
+    private void updateStars(double deltaTime) {
+        synchronized (stars) {
+            Iterator<Star> iterator = stars.iterator();
+            while (iterator.hasNext()) {
+                Star star = iterator.next();
+                star.update(deltaTime);
+
+                if (star.isPastLeftEdge()) {
+                    iterator.remove();
+                }
+            }
+
+            while (stars.size() < STAR_COUNT) {
+                stars.add(createStar(panelWidth));
+            }
+        }
+    }
+
+    private void startNewGame() {
+        gameState = GameState.PLAYING;
+        playerX = 200;
+        playerY = panelHeight / 2.0 - PLAYER_HEIGHT / 2.0;
+        velocityX = 0;
+        velocityY = 0;
+        playerLives = STARTING_LIVES;
+        collisionInvulnerabilityRemaining = 0;
+        asteroidSpawnTimer = 0;
+        scoreManager.reset();
+
+        synchronized (asteroids) {
+            asteroids.clear();
+        }
+
+        synchronized (explosions) {
+            explosions.clear();
+        }
     }
 
     private void updateAsteroids(double deltaTime) {
@@ -411,7 +489,19 @@ public class GameController {
          *
          * @param g the Graphics2D paintbrush — use it to draw shapes, images, text
          */
-    	
+
+        // Background is rendered first so every other object appears above it.
+        synchronized (stars) {
+            for (Star star : stars) {
+                star.render(g);
+            }
+        }
+
+        if (gameState == GameState.MENU) {
+            renderMainMenu(g);
+            return;
+        }
+
         // Draw the player sprite at its current movement position.
 
         // cast double positions to int — screen pixels must be whole numbers
@@ -452,5 +542,19 @@ public class GameController {
         if (playerLives == 0) {
             g.drawString("GAME OVER", panelWidth / 2 - 35, panelHeight / 2);
         }
+    }
+
+    private void renderMainMenu(Graphics2D g) {
+        String title = "SPACE SHOOTER HD";
+        String startText = "PRESS SPACE TO START";
+
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("SansSerif", Font.BOLD, 64));
+        int titleX = (panelWidth - g.getFontMetrics().stringWidth(title)) / 2;
+        g.drawString(title, titleX, panelHeight / 2 - 40);
+
+        g.setFont(new Font("SansSerif", Font.PLAIN, 24));
+        int startX = (panelWidth - g.getFontMetrics().stringWidth(startText)) / 2;
+        g.drawString(startText, startX, panelHeight / 2 + 40);
     }
 }
