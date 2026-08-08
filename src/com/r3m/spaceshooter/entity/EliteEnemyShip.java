@@ -2,6 +2,7 @@ package com.r3m.spaceshooter.entity;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
 import java.util.Random;
 
 /**
@@ -15,8 +16,8 @@ public class EliteEnemyShip extends EnemySpaceship {
     private static final double SHOOT_COOLDOWN_SECONDS = 0.6;
     private static final int ALIGNMENT_TOLERANCE_PIXELS = 14;
 
-    public EliteEnemyShip(double x, double y, int width, int height, Random random) {
-        super(x, y, width, height, SPEED, SHOOT_COOLDOWN_SECONDS, random);
+    public EliteEnemyShip(BufferedImage image, double x, double y, int width, int height, Random random) {
+        super(image, x, y, width, height, SPEED, SHOOT_COOLDOWN_SECONDS, random);
     }
 
     @Override
@@ -26,6 +27,11 @@ public class EliteEnemyShip extends EnemySpaceship {
 
     @Override
     public void render(Graphics2D graphics) {
+        if (image != null) {
+            graphics.drawImage(image, (int) x + width, (int) y, -width, height, null);
+            return;
+        }
+
         graphics.setColor(Color.MAGENTA.darker());
         int[] xPoints = {(int) x, (int) x, (int) x - width};
         int[] yPoints = {(int) y, (int) y + height, (int) y + height / 2};

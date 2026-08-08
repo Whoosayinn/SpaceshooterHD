@@ -1,5 +1,6 @@
 package com.r3m.spaceshooter.entity;
 
+import java.awt.image.BufferedImage;
 import java.util.Random;
 
 /**
@@ -18,10 +19,10 @@ public abstract class EnemySpaceship extends Spaceship {
     private boolean wantsToShoot = false;
     private double playerYReference;
 
-    protected EnemySpaceship(double x, double y, int width, int height,
+    protected EnemySpaceship(BufferedImage image, double x, double y, int width, int height,
                               double speed, double shootCooldownSeconds, Random random) {
-        // no image asset for enemies — concrete subclasses draw their own shape
-        super(null, x, y, width, height);
+        // image may be null — subclasses fall back to drawing a shape if so
+        super(image, x, y, width, height);
         this.speed = speed;
         this.shootCooldownSeconds = shootCooldownSeconds;
         this.random = random;
