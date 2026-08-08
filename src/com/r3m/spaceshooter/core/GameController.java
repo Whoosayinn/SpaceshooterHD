@@ -1,13 +1,13 @@
 package com.r3m.spaceshooter.core;
 
 import com.r3m.spaceshooter.entity.Asteroid;
+import com.r3m.spaceshooter.entity.Bullet;
 import com.r3m.spaceshooter.entity.Explosion;
 import com.r3m.spaceshooter.system.AssetManager;
 import com.r3m.spaceshooter.system.CollisionManager;
 import com.r3m.spaceshooter.system.InputManager;
 import com.r3m.spaceshooter.system.ScoreManager;
 import java.awt.Color;
-import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
@@ -31,13 +31,13 @@ public class GameController {
 	 * it orchestrates game logic but does NOT manage the window,
 	 * the game loop, or keyboard events directly.
 	 */
-	
+
     // --- SCREEN BOUNDARIES ---
 
     // width of the game panel in pixels
     // used to clamp entities so they can't move off the right edge
     private volatile int panelWidth;
-    
+
     // height of the game panel in pixels
     // used to clamp entities so they can't move off the bottom edge
     private volatile int panelHeight;
@@ -48,10 +48,10 @@ public class GameController {
 
     // reads keyboard state — which keys are currently held down
     InputManager inputManager;
-    
+
     // checks whether two game entities are overlapping
     CollisionManager collisionManager;
-    
+
     // loads and caches image assets from disk
     AssetManager assetManager;
     ScoreManager scoreManager;
@@ -62,7 +62,7 @@ public class GameController {
 
     // horizontal and vertical position of the player in pixels from the left edge
     private double playerX = 200, playerY = 250;
-    
+
     // movement speed in pixels per second
     // declared as double because it's multiplied by deltaTime (a double) every frame
     // at 60fps: 500 * 0.01666 = ~8.3 pixels per frame
@@ -76,15 +76,15 @@ public class GameController {
     private int playerLives = STARTING_LIVES;
     private double collisionInvulnerabilityRemaining;
 
-    
+
 	 // current velocity — how fast the ship is moving in each direction
 	 // persists between frames — this is what creates the inertia effect
 	 private double velocityX = 0;
 	 private double velocityY = 0;
-	 
+
 	// maximum speed the ship can reach in pixels per second
 	 private static final double MAX_SPEED = 400;
-	 
+
 	// how fast the ship accelerates when a key is held, pixels per second²
 	 private static final double ACCELERATION = 1200;
 
@@ -96,7 +96,7 @@ public class GameController {
 	 // threshold below which velocity snaps to zero
 	 // prevents the ship from drifting forever at imperceptibly small speeds
 	 private static final double STOP_THRESHOLD = 0.1;
-    
+
     // --- ASTEROID STATE ---
 
     private static final double ASTEROID_SPAWN_INTERVAL = 0.5;
@@ -115,6 +115,14 @@ public class GameController {
     private final BufferedImage asteroidImage;
     private double asteroidSpawnTimer = ASTEROID_SPAWN_INTERVAL;
 
+    // --- BULLET STATE ---
+    private static final double BULLET_SPEED = 700.0;
+    private static final double SHOOT_COOLDOWN_SECONDS = 0.25;
+    private static final int BULLET_SCORE_VALUE = 10;
+
+    private final List<Bullet> bullets = new ArrayList<>();
+    private double shootCooldownRemaining = 0.0;
+
     public GameController(InputManager inputManager, int panelWidth, int panelHeight) {
         /**
          * Constructor — initializes all managers and stores screen boundaries.
@@ -124,16 +132,16 @@ public class GameController {
          * @param panelWidth   the width of the game surface in pixels
          * @param panelHeight  the height of the game surface in pixels
          */
-    	
+
         // store the shared InputManager — this is the SAME object
         // that GamePanel attached to addKeyListener()
         // so key presses flow: keyboard → InputManager → here → player movement
         this.inputManager = inputManager;
-        
+
         // store screen dimensions for boundary clamping in update()
         this.panelWidth = panelWidth;
         this.panelHeight = panelHeight;
-        
+
         this.collisionManager = new CollisionManager();
         this.assetManager = AssetManager.getInstance();
         this.scoreManager = new ScoreManager();
@@ -151,11 +159,13 @@ public class GameController {
          *                  multiply all movement by this to keep speed
          *                  consistent regardless of frame rate
          */
-    	
+
         collisionInvulnerabilityRemaining = Math.max(
             0.0,
             collisionInvulnerabilityRemaining - deltaTime
         );
+
+        shootCooldownRemaining = Math.max(0.0, shootCooldownRemaining - deltaTime);
 
         double dx = 0; // horizontal direction: negative = left, positive = right
         double dy = 0; // vertical direction: negative = up, positive = down
@@ -182,7 +192,7 @@ public class GameController {
         // calculate the actual length of the direction vector
         // Pythagorean theorem: length = √(dx² + dy²)
         double length = Math.sqrt(dx * dx + dy * dy);
-        
+
         if (length != 0) {
             // divide each component by length to normalize to 1.0
             // then multiply by PLAYER_SPEED to apply intended speed
@@ -190,10 +200,10 @@ public class GameController {
             // result: player always moves at exactly PLAYER_SPEED pixels/second
             dx = (dx / length);
             dy = (dy / length);
-            
+
             velocityX += dx * ACCELERATION * deltaTime;
             velocityY += dy * ACCELERATION * deltaTime;
-            
+
             // clamp to max speed
             double currentSpeed = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
             if (currentSpeed > MAX_SPEED) {
@@ -224,17 +234,18 @@ public class GameController {
         // the - 32 accounts for the player's own width so the RIGHT edge of the
         // ship stays on screen, not just the left edge
         playerX = Math.max(0, Math.min(playerX, panelWidth - 32));
-        
+
         // same clamping for vertical — - 32 accounts for player height
         playerY = Math.max(0, Math.min(playerY, panelHeight - 32));
 
+        handleShooting();
+        updateBullets(deltaTime);
         updateAsteroids(deltaTime);
-        
+        checkBulletAsteroidCollisions();
+
         // --- Future additions go here ---
-        // update bullets: move them upward, remove if off screen
         // update enemies: move them downward, spawn new ones
         // collisionManager.isColliding(player, enemy) → handle damage
-        // collisionManager.isColliding(bullet, enemy) → handle destruction + score
     }
 
     public void setViewportSize(int width, int height) {
@@ -244,6 +255,63 @@ public class GameController {
 
         panelWidth = width;
         panelHeight = height;
+    }
+
+    private void handleShooting() {
+        if (!inputManager.isSpacePressed()) return;
+        if (shootCooldownRemaining > 0.0) return;
+        if (playerLives == 0) return;
+
+        double bulletX = playerX + PLAYER_WIDTH - 8;
+        double bulletY = playerY + (PLAYER_HEIGHT / 2.0) - (Bullet.getHeight() / 2.0);
+
+        synchronized (bullets) {
+            bullets.add(new Bullet(bulletX, bulletY, BULLET_SPEED));
+        }
+
+        shootCooldownRemaining = SHOOT_COOLDOWN_SECONDS;
+    }
+
+    private void updateBullets(double deltaTime) {
+        synchronized (bullets) {
+            Iterator<Bullet> iterator = bullets.iterator();
+            while (iterator.hasNext()) {
+                Bullet bullet = iterator.next();
+                bullet.update(deltaTime);
+                if (bullet.isPastRightEdge(panelWidth)) {
+                    iterator.remove();
+                }
+            }
+        }
+    }
+
+    private void checkBulletAsteroidCollisions() {
+        synchronized (bullets) {
+            synchronized (asteroids) {
+                Iterator<Bullet> bulletIterator = bullets.iterator();
+                while (bulletIterator.hasNext()) {
+                    Bullet bullet = bulletIterator.next();
+                    Rectangle bulletBounds = bullet.getBounds();
+                    boolean bulletConsumed = false;
+
+                    Iterator<Asteroid> asteroidIterator = asteroids.iterator();
+                    while (asteroidIterator.hasNext()) {
+                        Asteroid asteroid = asteroidIterator.next();
+                        if (collisionManager.isColliding(bulletBounds, asteroid.getBounds())) {
+                            createExplosion(asteroid.getCenterX(), asteroid.getCenterY());
+                            asteroidIterator.remove();
+                            scoreManager.addScore(BULLET_SCORE_VALUE);
+                            bulletConsumed = true;
+                            break;
+                        }
+                    }
+
+                    if (bulletConsumed) {
+                        bulletIterator.remove();
+                    }
+                }
+            }
+        }
     }
 
     private void updateAsteroids(double deltaTime) {
@@ -411,7 +479,7 @@ public class GameController {
          *
          * @param g the Graphics2D paintbrush — use it to draw shapes, images, text
          */
-    	
+
         // Draw the player sprite at its current movement position.
 
         // cast double positions to int — screen pixels must be whole numbers
@@ -429,6 +497,12 @@ public class GameController {
         synchronized (asteroids) {
             for (Asteroid asteroid : asteroids) {
                 asteroid.render(g);
+            }
+        }
+
+        synchronized (bullets) {
+            for (Bullet bullet : bullets) {
+                bullet.render(g);
             }
         }
 
