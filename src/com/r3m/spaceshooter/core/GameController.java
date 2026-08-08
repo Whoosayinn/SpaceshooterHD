@@ -597,6 +597,8 @@ public class GameController {
     }
 
     private void renderTextMenu(Graphics2D g) {
+        renderMenuBackgroundDecorations(g);
+
         if (gameState == GameState.INSTRUCTIONS) {
             renderInformationPage(
                 g,
@@ -635,8 +637,32 @@ public class GameController {
 
         int asciiSize = Math.max(8, Math.min(22, panelWidth / 70));
         g.setFont(new Font("Monospaced", Font.BOLD, asciiSize));
-        g.setColor(new Color(115, 225, 255));
         int y = Math.max(90, panelHeight / 6);
+
+        int titlePanelWidth = Math.min(panelWidth - 70, 1060);
+        int titlePanelHeight = asciiTitle.length * (asciiSize + 4) + 24;
+        int titlePanelX = (panelWidth - titlePanelWidth) / 2;
+        int titlePanelY = y - asciiSize - 12;
+        g.setColor(new Color(2, 13, 34, 225));
+        g.fillRoundRect(
+            titlePanelX,
+            titlePanelY,
+            titlePanelWidth,
+            titlePanelHeight,
+            20,
+            20
+        );
+        g.setColor(new Color(45, 175, 215, 95));
+        g.drawRoundRect(
+            titlePanelX,
+            titlePanelY,
+            titlePanelWidth,
+            titlePanelHeight,
+            20,
+            20
+        );
+
+        g.setColor(new Color(115, 225, 255));
         for (String line : asciiTitle) {
             drawCenteredString(g, line, y);
             y += asciiSize + 4;
@@ -652,11 +678,23 @@ public class GameController {
         };
 
         g.setFont(new Font("Monospaced", Font.BOLD, 22));
-        int optionY = Math.max(y + 70, panelHeight / 2 + 35);
+        int optionY = Math.max(y + 105, panelHeight / 2 - 5);
+        renderMenuDivider(g, optionY - 42);
+
         for (String option : options) {
+            int boxWidth = Math.min(390, panelWidth - 80);
+            int boxHeight = 36;
+            int boxX = (panelWidth - boxWidth) / 2;
+            int boxY = optionY - g.getFontMetrics().getAscent() - 7;
+
+            g.setColor(new Color(5, 31, 63));
+            g.fillRoundRect(boxX, boxY, boxWidth, boxHeight, 12, 12);
+            g.setColor(new Color(45, 175, 215, 125));
+            g.drawRoundRect(boxX, boxY, boxWidth, boxHeight, 12, 12);
+
             g.setColor(new Color(225, 245, 255));
             drawCenteredString(g, option, optionY);
-            optionY += 45;
+            optionY += 42;
         }
 
         g.setFont(new Font("Monospaced", Font.BOLD, 14));
@@ -664,6 +702,74 @@ public class GameController {
         int pulse = 175 + (int) (Math.sin(menuAnimationTime * 3.0) * 45);
         g.setColor(invalid ? new Color(255, 110, 110) : new Color(80, pulse, 235));
         drawCenteredString(g, menuMessage, Math.min(panelHeight - 40, optionY + 25));
+    }
+
+    private void renderMenuBackgroundDecorations(Graphics2D g) {
+        // A large translucent planet gives the cover more depth.
+        int planetSize = Math.max(220, Math.min(390, panelWidth / 4));
+        int planetX = panelWidth - planetSize + planetSize / 5;
+        int planetY = panelHeight - planetSize / 2;
+        g.setColor(new Color(25, 115, 165, 35));
+        g.fillOval(planetX, planetY, planetSize, planetSize);
+        g.setColor(new Color(75, 205, 235, 55));
+        g.drawOval(planetX, planetY, planetSize, planetSize);
+        g.drawArc(
+            planetX - planetSize / 5,
+            planetY + planetSize / 3,
+            planetSize + planetSize / 2,
+            planetSize / 3,
+            8,
+            165
+        );
+
+        // Symmetrical HUD corners frame the screen without covering content.
+        int margin = 34;
+        int cornerLength = Math.max(55, Math.min(120, panelWidth / 10));
+        g.setColor(new Color(55, 185, 220, 90));
+        g.drawLine(margin, margin, margin + cornerLength, margin);
+        g.drawLine(margin, margin, margin, margin + cornerLength / 2);
+        g.drawLine(panelWidth - margin, margin, panelWidth - margin - cornerLength, margin);
+        g.drawLine(panelWidth - margin, margin, panelWidth - margin, margin + cornerLength / 2);
+        g.drawLine(margin, panelHeight - margin, margin + cornerLength, panelHeight - margin);
+        g.drawLine(margin, panelHeight - margin, margin, panelHeight - margin - cornerLength / 2);
+        g.drawLine(
+            panelWidth - margin,
+            panelHeight - margin,
+            panelWidth - margin - cornerLength,
+            panelHeight - margin
+        );
+        g.drawLine(
+            panelWidth - margin,
+            panelHeight - margin,
+            panelWidth - margin,
+            panelHeight - margin - cornerLength / 2
+        );
+    }
+
+    private void renderMenuDivider(Graphics2D g, int y) {
+        int halfGap = 38;
+        int lineLength = Math.max(80, Math.min(210, panelWidth / 6));
+        int centerX = panelWidth / 2;
+        int pulse = 120 + (int) ((Math.sin(menuAnimationTime * 2.5) + 1.0) * 45);
+
+        g.setColor(new Color(55, pulse, 235, 145));
+        g.drawLine(centerX - halfGap - lineLength, y, centerX - halfGap, y);
+        g.drawLine(centerX + halfGap, y, centerX + halfGap + lineLength, y);
+
+        int diamondSize = 6;
+        int[] diamondX = {
+            centerX,
+            centerX + diamondSize,
+            centerX,
+            centerX - diamondSize
+        };
+        int[] diamondY = {
+            y - diamondSize,
+            y,
+            y + diamondSize,
+            y
+        };
+        g.fillPolygon(diamondX, diamondY, 4);
     }
 
     private void renderAnimatedMenuShip(Graphics2D g, int y) {
