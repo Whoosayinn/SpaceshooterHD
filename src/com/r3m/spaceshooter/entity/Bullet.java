@@ -5,25 +5,30 @@ import java.awt.Graphics2D;
 import java.awt.Rectangle;
 
 /**
- * A single bullet fired by the player. Travels left-to-right at a fixed
- * speed. No image asset — drawn directly as a small glowing rectangle.
+ * A single bullet fired by the player. Travels in a straight line at
+ * whatever angle it was given (velocityX, velocityY) — used both for
+ * normal forward shots and for angled spread-shot bullets.
+ * No image asset — drawn directly as a small glowing rectangle.
  */
 public class Bullet {
     private static final int WIDTH = 12;
     private static final int HEIGHT = 4;
 
     private final double velocityX;
+    private final double velocityY;
     private double x;
     private double y;
 
-    public Bullet(double x, double y, double velocityX) {
+    public Bullet(double x, double y, double velocityX, double velocityY) {
         this.x = x;
         this.y = y;
         this.velocityX = velocityX;
+        this.velocityY = velocityY;
     }
 
     public void update(double deltaTime) {
         x += velocityX * deltaTime;
+        y += velocityY * deltaTime;
     }
 
     public void render(Graphics2D graphics) {
@@ -35,8 +40,10 @@ public class Bullet {
         return new Rectangle((int) x, (int) y, WIDTH, HEIGHT);
     }
 
-    public boolean isPastRightEdge(int panelWidth) {
-        return x > panelWidth;
+    // now checks all four edges, since angled bullets can leave through
+    // the top or bottom of the screen, not just the right side
+    public boolean isOffScreen(int panelWidth, int panelHeight) {
+        return x > panelWidth || x < -WIDTH || y < -HEIGHT || y > panelHeight;
     }
 
     public static int getHeight() {

@@ -3,6 +3,7 @@ package com.r3m.spaceshooter.core;
 import com.r3m.spaceshooter.entity.Asteroid;
 import com.r3m.spaceshooter.entity.Bullet;
 import com.r3m.spaceshooter.entity.Explosion;
+import com.r3m.spaceshooter.entity.PowerUp;
 import com.r3m.spaceshooter.system.AssetManager;
 import com.r3m.spaceshooter.system.CollisionManager;
 import com.r3m.spaceshooter.system.InputManager;
@@ -123,6 +124,14 @@ public class GameController {
     private final List<Bullet> bullets = new ArrayList<>();
     private double shootCooldownRemaining = 0.0;
 
+    // --- POWER-UP STATE ---
+    private static final double POWERUP_DROP_CHANCE = 0.05;
+    private static final double SPREAD_SHOT_DURATION_SECONDS = 8.0;
+    private static final double SPREAD_ANGLE_DEGREES = 15.0;
+
+    private final List<PowerUp> powerUps = new ArrayList<>();
+    private double spreadShotRemaining = 0.0;
+
     public GameController(InputManager inputManager, int panelWidth, int panelHeight) {
         /**
          * Constructor — initializes all managers and stores screen boundaries.
@@ -238,10 +247,13 @@ public class GameController {
         // same clamping for vertical — - 32 accounts for player height
         playerY = Math.max(0, Math.min(playerY, panelHeight - 32));
 
+        spreadShotRemaining = Math.max(0.0, spreadShotRemaining - deltaTime);
+
         handleShooting();
         updateBullets(deltaTime);
         updateAsteroids(deltaTime);
         checkBulletAsteroidCollisions();
+        updatePowerUps(deltaTime);
 
         // --- Future additions go here ---
         // update enemies: move them downward, spawn new ones
@@ -266,7 +278,24 @@ public class GameController {
         double bulletY = playerY + (PLAYER_HEIGHT / 2.0) - (Bullet.getHeight() / 2.0);
 
         synchronized (bullets) {
-            bullets.add(new Bullet(bulletX, bulletY, BULLET_SPEED));
+            if (spreadShotRemaining > 0.0) {
+                double angleRadians = Math.toRadians(SPREAD_ANGLE_DEGREES);
+                bullets.add(new Bullet(bulletX, bulletY, BULLET_SPEED, 0));
+                bullets.add(new Bullet(
+                    bulletX,
+                    bulletY,
+                    BULLET_SPEED * Math.cos(angleRadians),
+                    -BULLET_SPEED * Math.sin(angleRadians)
+                ));
+                bullets.add(new Bullet(
+                    bulletX,
+                    bulletY,
+                    BULLET_SPEED * Math.cos(angleRadians),
+                    BULLET_SPEED * Math.sin(angleRadians)
+                ));
+            } else {
+                bullets.add(new Bullet(bulletX, bulletY, BULLET_SPEED, 0));
+            }
         }
 
         shootCooldownRemaining = SHOOT_COOLDOWN_SECONDS;
@@ -278,7 +307,7 @@ public class GameController {
             while (iterator.hasNext()) {
                 Bullet bullet = iterator.next();
                 bullet.update(deltaTime);
-                if (bullet.isPastRightEdge(panelWidth)) {
+                if (bullet.isOffScreen(panelWidth, panelHeight)) {
                     iterator.remove();
                 }
             }
@@ -299,6 +328,7 @@ public class GameController {
                         Asteroid asteroid = asteroidIterator.next();
                         if (collisionManager.isColliding(bulletBounds, asteroid.getBounds())) {
                             createExplosion(asteroid.getCenterX(), asteroid.getCenterY());
+                            maybeDropPowerUp(asteroid.getCenterX(), asteroid.getCenterY());
                             asteroidIterator.remove();
                             scoreManager.addScore(BULLET_SCORE_VALUE);
                             bulletConsumed = true;
@@ -309,6 +339,36 @@ public class GameController {
                     if (bulletConsumed) {
                         bulletIterator.remove();
                     }
+                }
+            }
+        }
+    }
+
+    private void maybeDropPowerUp(double centerX, double centerY) {
+        if (random.nextDouble() >= POWERUP_DROP_CHANCE) {
+            return;
+        }
+
+        synchronized (powerUps) {
+            powerUps.add(new PowerUp(centerX, centerY));
+        }
+    }
+
+    private void updatePowerUps(double deltaTime) {
+        synchronized (powerUps) {
+            Iterator<PowerUp> iterator = powerUps.iterator();
+            while (iterator.hasNext()) {
+                PowerUp powerUp = iterator.next();
+                powerUp.update(deltaTime);
+
+                if (powerUp.isPastLeftEdge()) {
+                    iterator.remove();
+                    continue;
+                }
+
+                if (collisionManager.isColliding(getPlayerBounds(), powerUp.getBounds())) {
+                    spreadShotRemaining = SPREAD_SHOT_DURATION_SECONDS;
+                    iterator.remove();
                 }
             }
         }
@@ -335,6 +395,7 @@ public class GameController {
 
                 if (collisionManager.isColliding(getPlayerBounds(), asteroid.getBounds())) {
                     createExplosion(asteroid.getCenterX(), asteroid.getCenterY());
+                    maybeDropPowerUp(asteroid.getCenterX(), asteroid.getCenterY());
                     iterator.remove();
                     damagePlayer();
                 }
@@ -369,6 +430,10 @@ public class GameController {
                 destroyedAsteroids.add(first);
                 destroyedAsteroids.add(second);
                 createExplosion(
+                    (first.getCenterX() + second.getCenterX()) / 2.0,
+                    (first.getCenterY() + second.getCenterY()) / 2.0
+                );
+                maybeDropPowerUp(
                     (first.getCenterX() + second.getCenterX()) / 2.0,
                     (first.getCenterY() + second.getCenterY()) / 2.0
                 );
@@ -513,6 +578,12 @@ public class GameController {
             }
         }
 
+        synchronized (powerUps) {
+            for (PowerUp powerUp : powerUps) {
+                powerUp.render(g);
+            }
+        }
+
         // switch color to white for the score text
         g.setColor(Color.WHITE);
 
@@ -523,6 +594,11 @@ public class GameController {
         // string concatenation: "Score: " + 0 = "Score: 0"
         g.drawString("Score: " + scoreManager.getScore(), 10, 20);
         g.drawString("Lives: " + playerLives, 10, 38);
+
+        if (spreadShotRemaining > 0.0) {
+            g.setColor(new java.awt.Color(80, 220, 255));
+            g.drawString("Spread Shot: " + String.format("%.1f", spreadShotRemaining) + "s", 10, 56);
+        }
 
         if (playerLives == 0) {
             g.drawString("GAME OVER", panelWidth / 2 - 35, panelHeight / 2);
