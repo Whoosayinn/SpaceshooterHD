@@ -44,6 +44,7 @@ public class GameController {
 
     private volatile GameState gameState = GameState.MENU;
     private String menuMessage = "SELECT AN OPTION USING KEYS 1 - 4";
+    private volatile double menuAnimationTime;
 
     // --- SCREEN BOUNDARIES ---
 
@@ -175,6 +176,7 @@ public class GameController {
         updateStars(deltaTime);
 
         if (gameState != GameState.PLAYING) {
+            menuAnimationTime += deltaTime;
             updateMenu();
             return;
         }
@@ -640,6 +642,8 @@ public class GameController {
             y += asciiSize + 4;
         }
 
+        renderAnimatedMenuShip(g, y + 12);
+
         String[] options = {
             "[1]  START GAME",
             "[2]  INSTRUCTIONS",
@@ -657,8 +661,37 @@ public class GameController {
 
         g.setFont(new Font("Monospaced", Font.BOLD, 14));
         boolean invalid = menuMessage.startsWith("INVALID");
-        g.setColor(invalid ? new Color(255, 110, 110) : new Color(100, 190, 220));
+        int pulse = 175 + (int) (Math.sin(menuAnimationTime * 3.0) * 45);
+        g.setColor(invalid ? new Color(255, 110, 110) : new Color(80, pulse, 235));
         drawCenteredString(g, menuMessage, Math.min(panelHeight - 40, optionY + 25));
+    }
+
+    private void renderAnimatedMenuShip(Graphics2D g, int y) {
+        if (spaceshipImage == null) {
+            return;
+        }
+
+        int shipWidth = Math.max(62, Math.min(92, panelWidth / 14));
+        int shipHeight = shipWidth * PLAYER_HEIGHT / PLAYER_WIDTH;
+        int drift = (int) (Math.sin(menuAnimationTime * 1.4) * 28);
+        int bob = (int) (Math.sin(menuAnimationTime * 2.2) * 5);
+        int shipX = (panelWidth - shipWidth) / 2 + drift;
+        int shipY = y + bob;
+        int engineY = shipY + shipHeight / 2;
+        int trailLength = 32 + (int) ((Math.sin(menuAnimationTime * 7.0) + 1.0) * 8);
+
+        // Soft glow behind the ship.
+        g.setColor(new Color(20, 190, 255, 45));
+        g.fillOval(shipX - 16, shipY - 8, shipWidth + 32, shipHeight + 16);
+
+        // Animated engine trail.
+        g.setColor(new Color(55, 220, 255, 160));
+        g.drawLine(shipX - trailLength, engineY, shipX - 5, engineY);
+        g.setColor(new Color(120, 235, 255, 80));
+        g.drawLine(shipX - trailLength / 2, engineY - 5, shipX - 4, engineY - 5);
+        g.drawLine(shipX - trailLength / 2, engineY + 5, shipX - 4, engineY + 5);
+
+        g.drawImage(spaceshipImage, shipX, shipY, shipWidth, shipHeight, null);
     }
 
     private void renderInformationPage(Graphics2D g, String heading, String[] lines) {
