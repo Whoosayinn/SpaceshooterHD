@@ -148,6 +148,10 @@ public class GamePanel extends JPanel implements Runnable {
                 double deltaTime = gameClock.waitForNextFrame();
 
                 
+                // Swing's drawable size can differ from the monitor display mode
+                // because of fullscreen transitions or operating-system DPI scaling.
+                gameController.setViewportSize(getWidth(), getHeight());
+
                 // update all game logic for this frame
                 // moves player/enemies/bullets, checks collisions, updates score
                 // passes deltaTime so movement is frame-rate independent

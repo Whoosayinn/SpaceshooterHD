@@ -33,11 +33,11 @@ public class GameController {
 
     // width of the game panel in pixels
     // used to clamp entities so they can't move off the right edge
-    private final int panelWidth;
+    private volatile int panelWidth;
     
     // height of the game panel in pixels
     // used to clamp entities so they can't move off the bottom edge
-    private final int panelHeight;
+    private volatile int panelHeight;
 
     // --- SYSTEM MANAGERS ---
     // all private and final — encapsulation means nothing outside
@@ -75,7 +75,7 @@ public class GameController {
 
     // --- ASTEROID STATE ---
 
-    private static final double ASTEROID_SPAWN_INTERVAL = 1.5;
+    private static final double ASTEROID_SPAWN_INTERVAL = 0.5;
     private static final double ASTEROID_MIN_SPEED = 110.0;
     private static final double ASTEROID_SPEED_RANGE = 90.0;
     private static final double ASTEROID_MIN_VERTICAL_SPEED = 50.0;
@@ -189,6 +189,15 @@ public class GameController {
         // update enemies: move them downward, spawn new ones
         // collisionManager.isColliding(player, enemy) → handle damage
         // collisionManager.isColliding(bullet, enemy) → handle destruction + score
+    }
+
+    public void setViewportSize(int width, int height) {
+        if (width <= 0 || height <= 0) {
+            return;
+        }
+
+        panelWidth = width;
+        panelHeight = height;
     }
 
     private void updateAsteroids(double deltaTime) {

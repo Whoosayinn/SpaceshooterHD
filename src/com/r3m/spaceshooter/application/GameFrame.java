@@ -4,9 +4,9 @@ import com.r3m.spaceshooter.core.GamePanel;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.KeyStroke;
-import java.awt.DisplayMode;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
+import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
 
@@ -18,14 +18,14 @@ public class GameFrame extends JFrame {
         GraphicsDevice screenDevice = GraphicsEnvironment
             .getLocalGraphicsEnvironment()
             .getDefaultScreenDevice();
-        DisplayMode displayMode = screenDevice.getDisplayMode();
+        Rectangle screenBounds = screenDevice.getDefaultConfiguration().getBounds();
 
         setTitle("2D Space Shooter");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setUndecorated(true);
         setResizable(false);
 
-        gamePanel = new GamePanel(displayMode.getWidth(), displayMode.getHeight());
+        gamePanel = new GamePanel(screenBounds.width, screenBounds.height);
         add(gamePanel);
         getRootPane().registerKeyboardAction(
             event -> dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING)),
