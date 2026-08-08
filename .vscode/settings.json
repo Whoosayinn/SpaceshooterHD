@@ -1,0 +1,10 @@
+{
+    "java.jdt.ls.java.home": "C:\\Users\\liveh\\AppData\\Local\\Programs\\Java\\jdk-26.0.2\\Java\\jdk-26.0.2",
+    "java.configuration.runtimes": [
+        {
+            "name": "JavaSE-21",
+            "path": "C:\\Users\\liveh\\AppData\\Local\\Programs\\Java\\jdk-26.0.2\\Java\\jdk-26.0.2",
+            "default": true
+        }
+    ]
+}

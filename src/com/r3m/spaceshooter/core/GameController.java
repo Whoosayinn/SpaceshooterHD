@@ -1,5 +1,6 @@
 package com.r3m.spaceshooter.core;
 
+import com.r3m.spaceshooter.entity.Asteroid;
 import com.r3m.spaceshooter.system.AssetManager;
 import com.r3m.spaceshooter.system.CollisionManager;
 import com.r3m.spaceshooter.system.InputManager;
@@ -7,6 +8,11 @@ import com.r3m.spaceshooter.system.ScoreManager;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
 
 public class GameController {
 	/**
@@ -58,6 +64,17 @@ public class GameController {
     // at 60fps: 500 * 0.01666 = ~8.3 pixels per frame
     private static final int PLAYER_SPEED = 500;
 
+    // --- ASTEROID STATE ---
+
+    private static final double ASTEROID_SPAWN_INTERVAL = 1.5;
+    private static final double ASTEROID_MIN_SPEED = 110.0;
+    private static final double ASTEROID_SPEED_RANGE = 90.0;
+
+    private final List<Asteroid> asteroids = new ArrayList<>();
+    private final Random random = new Random();
+    private final BufferedImage asteroidImage;
+    private double asteroidSpawnTimer = ASTEROID_SPAWN_INTERVAL;
+
     public GameController(InputManager inputManager, int panelWidth, int panelHeight) {
         /**
          * Constructor — initializes all managers and stores screen boundaries.
@@ -80,6 +97,7 @@ public class GameController {
         this.collisionManager = new CollisionManager();
         this.assetManager = AssetManager.getInstance();
         this.scoreManager = new ScoreManager();
+        this.asteroidImage = assetManager.loadImage("/assets/asteroid.png");
     }
 
     public void update(double deltaTime) {
@@ -145,12 +163,45 @@ public class GameController {
         
         // same clamping for vertical — - 32 accounts for player height
         playerY = Math.max(0, Math.min(playerY, panelHeight - 32));
+
+        updateAsteroids(deltaTime);
         
         // --- Future additions go here ---
         // update bullets: move them upward, remove if off screen
         // update enemies: move them downward, spawn new ones
         // collisionManager.isColliding(player, enemy) → handle damage
         // collisionManager.isColliding(bullet, enemy) → handle destruction + score
+    }
+
+    private void updateAsteroids(double deltaTime) {
+        synchronized (asteroids) {
+            asteroidSpawnTimer += deltaTime;
+
+            if (asteroidSpawnTimer >= ASTEROID_SPAWN_INTERVAL) {
+                spawnAsteroid();
+                asteroidSpawnTimer = 0.0;
+            }
+
+            Iterator<Asteroid> iterator = asteroids.iterator();
+            while (iterator.hasNext()) {
+                Asteroid asteroid = iterator.next();
+                asteroid.update(deltaTime);
+                if (asteroid.isPastRightEdge(panelWidth)) {
+                    iterator.remove();
+                }
+            }
+        }
+    }
+
+    private void spawnAsteroid() {
+        if (asteroidImage == null) {
+            return;
+        }
+
+        int maximumY = Math.max(0, panelHeight - Asteroid.getSize());
+        double y = maximumY == 0 ? 0 : random.nextInt(maximumY + 1);
+        double speed = ASTEROID_MIN_SPEED + random.nextDouble() * ASTEROID_SPEED_RANGE;
+        asteroids.add(new Asteroid(asteroidImage, -Asteroid.getSize(), y, speed));
     }
 
     // What is graphics g? a class that has many functions to draw objects on screen
@@ -177,6 +228,12 @@ public class GameController {
         // only discarded at the last moment here when handing to the screen
         // arguments: x position, y position, width, height
         g.fillOval((int) playerX, (int) playerY, 48, 32);
+
+        synchronized (asteroids) {
+            for (Asteroid asteroid : asteroids) {
+                asteroid.render(g);
+            }
+        }
 
         // switch color to white for the score text
         g.setColor(Color.WHITE);
