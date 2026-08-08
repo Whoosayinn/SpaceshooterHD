@@ -64,6 +64,27 @@ public class GameController {
     // at 60fps: 500 * 0.01666 = ~8.3 pixels per frame
     private static final int PLAYER_SPEED = 500;
 
+    
+	 // current velocity — how fast the ship is moving in each direction
+	 // persists between frames — this is what creates the inertia effect
+	 private double velocityX = 0;
+	 private double velocityY = 0;
+	 
+	// maximum speed the ship can reach in pixels per second
+	 private static final double MAX_SPEED = 400;
+	 
+	// how fast the ship accelerates when a key is held, pixels per second²
+	 private static final double ACCELERATION = 1200;
+
+	 // friction multiplier applied every frame when no key is pressed
+	 // 0.88 means velocity loses 12% per frame — feels like ice
+	 // closer to 1.0 = icier, closer to 0.0 = more grippy
+	 private static final double FRICTION = 0.98;
+
+	 // threshold below which velocity snaps to zero
+	 // prevents the ship from drifting forever at imperceptibly small speeds
+	 private static final double STOP_THRESHOLD = 0.1;
+    
     // --- ASTEROID STATE ---
 
     private static final double ASTEROID_SPAWN_INTERVAL = 1.5;
@@ -142,27 +163,41 @@ public class GameController {
             // then multiply by PLAYER_SPEED to apply intended speed
             // then multiply by deltaTime to make it frame-rate independent
             // result: player always moves at exactly PLAYER_SPEED pixels/second
-            dx = (dx / length) * PLAYER_SPEED * deltaTime;
-            dy = (dy / length) * PLAYER_SPEED * deltaTime;
+            dx = (dx / length);
+            dy = (dy / length);
+            
+            velocityX += dx * ACCELERATION * deltaTime;
+            velocityY += dy * ACCELERATION * deltaTime;
+            
+            // clamp to max speed
+            double currentSpeed = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
+            if (currentSpeed > MAX_SPEED) {
+                velocityX = (velocityX / currentSpeed) * MAX_SPEED;
+                velocityY = (velocityY / currentSpeed) * MAX_SPEED;
+            }
+        } else {
+            // no key held — apply friction
+            velocityX *= FRICTION;
+            velocityY *= FRICTION;
+
+            // snap to zero to prevent infinite drift
+            if (Math.abs(velocityX) < STOP_THRESHOLD) velocityX = 0;
+            if (Math.abs(velocityY) < STOP_THRESHOLD) velocityY = 0;
         }
 
         // --- Step 3: Apply movement ---
         // add the calculated displacement to the current position
         // playerX and playerY are doubles so sub-pixel precision is preserved
-        playerX += dx;
-        playerY += dy;
+        playerX += velocityX * deltaTime;
+        playerY += velocityY * deltaTime;
 
         // --- Step 4: Clamp to screen bounds ---
         // prevents the player from moving outside the visible game area
 
-        // Math.max(0, ...) stops the player at the left/top edge (can't go below 0)
-        // Math.min(..., panelWidth - 32) stops at the right edge
-        // the - 32 accounts for the player's own width so the RIGHT edge of the
-        // ship stays on screen, not just the left edge
-        playerX = Math.max(0, Math.min(playerX, panelWidth - 32));
-        
-        // same clamping for vertical — - 32 accounts for player height
-        playerY = Math.max(0, Math.min(playerY, panelHeight - 32));
+        if (playerX <= 0)                  { playerX = 0;              velocityX = 0; }
+        if (playerX >= panelWidth - 32)    { playerX = panelWidth - 32; velocityX = 0; }
+        if (playerY <= 0)                  { playerY = 0;              velocityY = 0; }
+        if (playerY >= panelHeight - 32)   { playerY = panelHeight - 32; velocityY = 0; }
 
         updateAsteroids(deltaTime);
         
