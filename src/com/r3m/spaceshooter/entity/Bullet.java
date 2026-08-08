@@ -16,14 +16,20 @@ public class Bullet {
 
     private final double velocityX;
     private final double velocityY;
+    private final Color color;
     private double x;
     private double y;
 
     public Bullet(double x, double y, double velocityX, double velocityY) {
+        this(x, y, velocityX, velocityY, Color.YELLOW);
+    }
+
+    public Bullet(double x, double y, double velocityX, double velocityY, Color color) {
         this.x = x;
         this.y = y;
         this.velocityX = velocityX;
         this.velocityY = velocityY;
+        this.color = color;
     }
 
     public void update(double deltaTime) {
@@ -32,7 +38,7 @@ public class Bullet {
     }
 
     public void render(Graphics2D graphics) {
-        graphics.setColor(Color.YELLOW);
+        graphics.setColor(color);
         graphics.fillRect((int) x, (int) y, WIDTH, HEIGHT);
     }
 

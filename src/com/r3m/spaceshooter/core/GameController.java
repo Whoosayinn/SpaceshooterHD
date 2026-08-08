@@ -2,7 +2,11 @@ package com.r3m.spaceshooter.core;
 
 import com.r3m.spaceshooter.entity.Asteroid;
 import com.r3m.spaceshooter.entity.Bullet;
+import com.r3m.spaceshooter.entity.EliteEnemyShip;
+import com.r3m.spaceshooter.entity.EnemySpaceship;
 import com.r3m.spaceshooter.entity.Explosion;
+import com.r3m.spaceshooter.entity.GruntEnemyShip;
+import com.r3m.spaceshooter.entity.PlayerSpaceship;
 import com.r3m.spaceshooter.entity.PowerUp;
 import com.r3m.spaceshooter.system.AssetManager;
 import com.r3m.spaceshooter.system.CollisionManager;
@@ -57,46 +61,10 @@ public class GameController {
     AssetManager assetManager;
     ScoreManager scoreManager;
 
-    // --- PLAYER STATE ---
-    // temporary placeholder — will be replaced by a proper Player class later
-    // stored as double for sub-pixel precision, preventing stuttery movement
-
-    // horizontal and vertical position of the player in pixels from the left edge
-    private double playerX = 200, playerY = 250;
-
-    // movement speed in pixels per second
-    // declared as double because it's multiplied by deltaTime (a double) every frame
-    // at 60fps: 500 * 0.01666 = ~8.3 pixels per frame
-    private static final int PLAYER_SPEED = 500;
+    // --- PLAYER ---
     private static final int PLAYER_WIDTH = 64;
     private static final int PLAYER_HEIGHT = 56;
-    private static final int PLAYER_HITBOX_INSET = 8;
-    private static final int STARTING_LIVES = 3;
-    private static final double COLLISION_INVULNERABILITY_SECONDS = 1.0;
-    private final BufferedImage spaceshipImage;
-    private int playerLives = STARTING_LIVES;
-    private double collisionInvulnerabilityRemaining;
-
-
-	 // current velocity — how fast the ship is moving in each direction
-	 // persists between frames — this is what creates the inertia effect
-	 private double velocityX = 0;
-	 private double velocityY = 0;
-
-	// maximum speed the ship can reach in pixels per second
-	 private static final double MAX_SPEED = 400;
-
-	// how fast the ship accelerates when a key is held, pixels per second²
-	 private static final double ACCELERATION = 1200;
-
-	 // friction multiplier applied every frame when no key is pressed
-	 // 0.88 means velocity loses 12% per frame — feels like ice
-	 // closer to 1.0 = icier, closer to 0.0 = more grippy
-	 private static final double FRICTION = 0.98;
-
-	 // threshold below which velocity snaps to zero
-	 // prevents the ship from drifting forever at imperceptibly small speeds
-	 private static final double STOP_THRESHOLD = 0.1;
+    private final PlayerSpaceship player;
 
     // --- ASTEROID STATE ---
 
@@ -132,6 +100,20 @@ public class GameController {
     private final List<PowerUp> powerUps = new ArrayList<>();
     private double spreadShotRemaining = 0.0;
 
+    // --- ENEMY SHIP STATE ---
+    private static final double ENEMY_SPAWN_INTERVAL_SECONDS = 2.5;
+    private static final int ENEMY_WIDTH = 50;
+    private static final int ENEMY_HEIGHT = 36;
+    private static final double ELITE_SPAWN_CHANCE = 0.3;
+    private static final int ENEMY_KILL_SCORE_VALUE = 25;
+    private static final double ENEMY_BULLET_SPEED = 500.0;
+
+    private final List<EnemySpaceship> enemies = new ArrayList<>();
+    private final List<Bullet> enemyBullets = new ArrayList<>();
+    private double enemySpawnTimer = ENEMY_SPAWN_INTERVAL_SECONDS;
+    private final BufferedImage gruntImage;
+    private final BufferedImage eliteImage;
+
     public GameController(InputManager inputManager, int panelWidth, int panelHeight) {
         /**
          * Constructor — initializes all managers and stores screen boundaries.
@@ -154,8 +136,14 @@ public class GameController {
         this.collisionManager = new CollisionManager();
         this.assetManager = AssetManager.getInstance();
         this.scoreManager = new ScoreManager();
-        this.spaceshipImage = assetManager.loadImage("/assets/spaceship.png");
+        BufferedImage spaceshipImage = assetManager.loadImage("/assets/spaceship.png");
+        this.player = new PlayerSpaceship(
+            spaceshipImage, 200, 250, PLAYER_WIDTH, PLAYER_HEIGHT,
+            inputManager, panelWidth, panelHeight
+        );
         this.asteroidImage = assetManager.loadImage("/assets/asteroid.png");
+        this.gruntImage = assetManager.loadImage("/assets/enemy_grunt.png");
+        this.eliteImage = assetManager.loadImage("/assets/enemy_elite.png");
     }
 
     public void update(double deltaTime) {
@@ -169,84 +157,9 @@ public class GameController {
          *                  consistent regardless of frame rate
          */
 
-        collisionInvulnerabilityRemaining = Math.max(
-            0.0,
-            collisionInvulnerabilityRemaining - deltaTime
-        );
+        player.update(deltaTime);
 
         shootCooldownRemaining = Math.max(0.0, shootCooldownRemaining - deltaTime);
-
-        double dx = 0; // horizontal direction: negative = left, positive = right
-        double dy = 0; // vertical direction: negative = up, positive = down
-
-        // A key moves left — subtracts from dx
-        if (inputManager.isAPressed()) dx--;
-
-        // D key moves right — adds to dx
-        if (inputManager.isDPressed()) dx++;
-
-        // W key moves up — subtracts from dy
-        // in Java2D, y=0 is the TOP of the screen, so going up means decreasing y
-        if (inputManager.isWPressed()) dy--;
-
-        // S key moves down — adds to dy
-        if (inputManager.isSPressed()) dy++;
-
-
-        // --- Step 2: Normalize the direction vector ---
-        // without normalization, diagonal movement (dx=1, dy=1) would travel
-        // at speed √2 ≈ 1.41x faster than straight movement (dx=1, dy=0)
-        // normalization scales the vector to length 1.0 regardless of direction
-
-        // calculate the actual length of the direction vector
-        // Pythagorean theorem: length = √(dx² + dy²)
-        double length = Math.sqrt(dx * dx + dy * dy);
-
-        if (length != 0) {
-            // divide each component by length to normalize to 1.0
-            // then multiply by PLAYER_SPEED to apply intended speed
-            // then multiply by deltaTime to make it frame-rate independent
-            // result: player always moves at exactly PLAYER_SPEED pixels/second
-            dx = (dx / length);
-            dy = (dy / length);
-
-            velocityX += dx * ACCELERATION * deltaTime;
-            velocityY += dy * ACCELERATION * deltaTime;
-
-            // clamp to max speed
-            double currentSpeed = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
-            if (currentSpeed > MAX_SPEED) {
-                velocityX = (velocityX / currentSpeed) * MAX_SPEED;
-                velocityY = (velocityY / currentSpeed) * MAX_SPEED;
-            }
-        } else {
-            // no key held — apply friction
-            velocityX *= FRICTION;
-            velocityY *= FRICTION;
-
-            // snap to zero to prevent infinite drift
-            if (Math.abs(velocityX) < STOP_THRESHOLD) velocityX = 0;
-            if (Math.abs(velocityY) < STOP_THRESHOLD) velocityY = 0;
-        }
-
-        // --- Step 3: Apply movement ---
-        // add the calculated displacement to the current position
-        // playerX and playerY are doubles so sub-pixel precision is preserved
-        playerX += velocityX * deltaTime;
-        playerY += velocityY * deltaTime;
-
-        // --- Step 4: Clamp to screen bounds ---
-        // prevents the player from moving outside the visible game area
-
-        // Math.max(0, ...) stops the player at the left/top edge (can't go below 0)
-        // Math.min(..., panelWidth - 32) stops at the right edge
-        // the - 32 accounts for the player's own width so the RIGHT edge of the
-        // ship stays on screen, not just the left edge
-        playerX = Math.max(0, Math.min(playerX, panelWidth - 32));
-
-        // same clamping for vertical — - 32 accounts for player height
-        playerY = Math.max(0, Math.min(playerY, panelHeight - 32));
-
         spreadShotRemaining = Math.max(0.0, spreadShotRemaining - deltaTime);
 
         handleShooting();
@@ -255,9 +168,10 @@ public class GameController {
         checkBulletAsteroidCollisions();
         updatePowerUps(deltaTime);
 
-        // --- Future additions go here ---
-        // update enemies: move them downward, spawn new ones
-        // collisionManager.isColliding(player, enemy) → handle damage
+        updateEnemies(deltaTime);
+        updateEnemyBullets(deltaTime);
+        checkBulletEnemyCollisions();
+        checkEnemyBulletPlayerCollisions();
     }
 
     public void setViewportSize(int width, int height) {
@@ -267,15 +181,16 @@ public class GameController {
 
         panelWidth = width;
         panelHeight = height;
+        player.setViewportSize(width, height);
     }
 
     private void handleShooting() {
         if (!inputManager.isSpacePressed()) return;
         if (shootCooldownRemaining > 0.0) return;
-        if (playerLives == 0) return;
+        if (!player.isAlive()) return;
 
-        double bulletX = playerX + PLAYER_WIDTH - 8;
-        double bulletY = playerY + (PLAYER_HEIGHT / 2.0) - (Bullet.getHeight() / 2.0);
+        double bulletX = player.getX() + PLAYER_WIDTH - 8;
+        double bulletY = player.getY() + (PLAYER_HEIGHT / 2.0) - (Bullet.getHeight() / 2.0);
 
         synchronized (bullets) {
             if (spreadShotRemaining > 0.0) {
@@ -339,6 +254,108 @@ public class GameController {
                     if (bulletConsumed) {
                         bulletIterator.remove();
                     }
+                }
+            }
+        }
+    }
+
+    private void updateEnemies(double deltaTime) {
+        synchronized (enemies) {
+            enemySpawnTimer += deltaTime;
+
+            if (enemySpawnTimer >= ENEMY_SPAWN_INTERVAL_SECONDS) {
+                spawnEnemy();
+                enemySpawnTimer = 0.0;
+            }
+
+            Iterator<EnemySpaceship> iterator = enemies.iterator();
+            while (iterator.hasNext()) {
+                EnemySpaceship enemy = iterator.next();
+
+                enemy.setPlayerYReference(player.getCenterY());
+                enemy.update(deltaTime);
+
+                if (enemy.consumeShootRequest()) {
+                    spawnEnemyBullet(enemy);
+                }
+
+                if (enemy.isPastLeftEdge()) {
+                    iterator.remove();
+                }
+            }
+        }
+    }
+
+    private void spawnEnemy() {
+        int maximumY = Math.max(0, panelHeight - ENEMY_HEIGHT);
+        double y = maximumY == 0 ? 0 : random.nextInt(maximumY + 1);
+
+        EnemySpaceship enemy = random.nextDouble() < ELITE_SPAWN_CHANCE
+            ? new EliteEnemyShip(eliteImage, panelWidth, y, ENEMY_WIDTH, ENEMY_HEIGHT, random)
+            : new GruntEnemyShip(gruntImage, panelWidth, y, ENEMY_WIDTH, ENEMY_HEIGHT, random);
+
+        enemies.add(enemy);
+    }
+
+    private void spawnEnemyBullet(EnemySpaceship enemy) {
+        double bulletX = enemy.getX();
+        double bulletY = enemy.getCenterY() - (Bullet.getHeight() / 2.0);
+
+        synchronized (enemyBullets) {
+            enemyBullets.add(new Bullet(bulletX, bulletY, -ENEMY_BULLET_SPEED, 0, Color.RED));
+        }
+    }
+
+    private void updateEnemyBullets(double deltaTime) {
+        synchronized (enemyBullets) {
+            Iterator<Bullet> iterator = enemyBullets.iterator();
+            while (iterator.hasNext()) {
+                Bullet bullet = iterator.next();
+                bullet.update(deltaTime);
+                if (bullet.isOffScreen(panelWidth, panelHeight)) {
+                    iterator.remove();
+                }
+            }
+        }
+    }
+
+    private void checkBulletEnemyCollisions() {
+        synchronized (bullets) {
+            synchronized (enemies) {
+                Iterator<Bullet> bulletIterator = bullets.iterator();
+                while (bulletIterator.hasNext()) {
+                    Bullet bullet = bulletIterator.next();
+                    Rectangle bulletBounds = bullet.getBounds();
+                    boolean bulletConsumed = false;
+
+                    Iterator<EnemySpaceship> enemyIterator = enemies.iterator();
+                    while (enemyIterator.hasNext()) {
+                        EnemySpaceship enemy = enemyIterator.next();
+                        if (collisionManager.isColliding(bulletBounds, enemy.getBounds())) {
+                            createExplosion(enemy.getCenterX(), enemy.getCenterY());
+                            enemyIterator.remove();
+                            scoreManager.addScore(ENEMY_KILL_SCORE_VALUE);
+                            bulletConsumed = true;
+                            break;
+                        }
+                    }
+
+                    if (bulletConsumed) {
+                        bulletIterator.remove();
+                    }
+                }
+            }
+        }
+    }
+
+    private void checkEnemyBulletPlayerCollisions() {
+        synchronized (enemyBullets) {
+            Iterator<Bullet> iterator = enemyBullets.iterator();
+            while (iterator.hasNext()) {
+                Bullet bullet = iterator.next();
+                if (collisionManager.isColliding(bullet.getBounds(), player.getHitbox())) {
+                    damagePlayer();
+                    iterator.remove();
                 }
             }
         }
@@ -515,21 +532,11 @@ public class GameController {
     }
 
     private Rectangle getPlayerBounds() {
-        return new Rectangle(
-            (int) playerX + PLAYER_HITBOX_INSET,
-            (int) playerY + PLAYER_HITBOX_INSET,
-            PLAYER_WIDTH - PLAYER_HITBOX_INSET * 2,
-            PLAYER_HEIGHT - PLAYER_HITBOX_INSET * 2
-        );
+        return player.getHitbox();
     }
 
     private void damagePlayer() {
-        if (collisionInvulnerabilityRemaining > 0.0 || playerLives == 0) {
-            return;
-        }
-
-        playerLives--;
-        collisionInvulnerabilityRemaining = COLLISION_INVULNERABILITY_SECONDS;
+        player.takeHit();
     }
 
     // What is graphics g? a class that has many functions to draw objects on screen
@@ -546,19 +553,8 @@ public class GameController {
          * @param g the Graphics2D paintbrush — use it to draw shapes, images, text
          */
 
-        // Draw the player sprite at its current movement position.
-
-        // cast double positions to int — screen pixels must be whole numbers
-        if (spaceshipImage != null) {
-            g.drawImage(
-                spaceshipImage,
-                (int) playerX,
-                (int) playerY,
-                PLAYER_WIDTH,
-                PLAYER_HEIGHT,
-                null
-            );
-        }
+        // player handles its own rendering (including blinking while invulnerable)
+        player.render(g);
 
         synchronized (asteroids) {
             for (Asteroid asteroid : asteroids) {
@@ -566,8 +562,20 @@ public class GameController {
             }
         }
 
+        synchronized (enemies) {
+            for (EnemySpaceship enemy : enemies) {
+                enemy.render(g);
+            }
+        }
+
         synchronized (bullets) {
             for (Bullet bullet : bullets) {
+                bullet.render(g);
+            }
+        }
+
+        synchronized (enemyBullets) {
+            for (Bullet bullet : enemyBullets) {
                 bullet.render(g);
             }
         }
@@ -593,14 +601,15 @@ public class GameController {
         // so as soon as score changes, it shows up immediately next render
         // string concatenation: "Score: " + 0 = "Score: 0"
         g.drawString("Score: " + scoreManager.getScore(), 10, 20);
-        g.drawString("Lives: " + playerLives, 10, 38);
+        g.drawString("Lives: " + player.getLives(), 10, 38);
 
         if (spreadShotRemaining > 0.0) {
             g.setColor(new java.awt.Color(80, 220, 255));
             g.drawString("Spread Shot: " + String.format("%.1f", spreadShotRemaining) + "s", 10, 56);
         }
 
-        if (playerLives == 0) {
+        if (!player.isAlive()) {
+            g.setColor(Color.WHITE);
             g.drawString("GAME OVER", panelWidth / 2 - 35, panelHeight / 2);
         }
     }
