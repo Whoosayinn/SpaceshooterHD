@@ -6,5 +6,6 @@ public class Main {
         // initialize custom gameFrame class
         window.setVisible(true);
         // set the window to be visible
+        window.startGame();
     }
 }

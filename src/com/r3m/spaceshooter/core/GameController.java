@@ -8,6 +8,7 @@ import com.r3m.spaceshooter.system.ScoreManager;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -65,13 +66,21 @@ public class GameController {
     private static final int PLAYER_SPEED = 500;
     private static final int PLAYER_WIDTH = 64;
     private static final int PLAYER_HEIGHT = 56;
+    private static final int PLAYER_HITBOX_INSET = 8;
+    private static final int STARTING_LIVES = 3;
+    private static final double COLLISION_INVULNERABILITY_SECONDS = 1.0;
     private final BufferedImage spaceshipImage;
+    private int playerLives = STARTING_LIVES;
+    private double collisionInvulnerabilityRemaining;
 
     // --- ASTEROID STATE ---
 
     private static final double ASTEROID_SPAWN_INTERVAL = 1.5;
     private static final double ASTEROID_MIN_SPEED = 110.0;
     private static final double ASTEROID_SPEED_RANGE = 90.0;
+    private static final double ASTEROID_MIN_VERTICAL_SPEED = 50.0;
+    private static final double ASTEROID_VERTICAL_SPEED_RANGE = 90.0;
+    private static final double STRAIGHT_ASTEROID_CHANCE = 0.35;
 
     private final List<Asteroid> asteroids = new ArrayList<>();
     private final Random random = new Random();
@@ -115,6 +124,11 @@ public class GameController {
          *                  consistent regardless of frame rate
          */
     	
+        collisionInvulnerabilityRemaining = Math.max(
+            0.0,
+            collisionInvulnerabilityRemaining - deltaTime
+        );
+
         double dx = 0; // horizontal direction: negative = left, positive = right
         double dy = 0; // vertical direction: negative = up, positive = down
 
@@ -189,9 +203,16 @@ public class GameController {
             Iterator<Asteroid> iterator = asteroids.iterator();
             while (iterator.hasNext()) {
                 Asteroid asteroid = iterator.next();
-                asteroid.update(deltaTime);
-                if (asteroid.isPastRightEdge(panelWidth)) {
+                asteroid.update(deltaTime, panelHeight);
+
+                if (asteroid.isPastLeftEdge()) {
                     iterator.remove();
+                    continue;
+                }
+
+                if (collisionManager.isColliding(getPlayerBounds(), asteroid.getBounds())) {
+                    iterator.remove();
+                    damagePlayer();
                 }
             }
         }
@@ -204,8 +225,38 @@ public class GameController {
 
         int maximumY = Math.max(0, panelHeight - Asteroid.getSize());
         double y = maximumY == 0 ? 0 : random.nextInt(maximumY + 1);
-        double speed = ASTEROID_MIN_SPEED + random.nextDouble() * ASTEROID_SPEED_RANGE;
-        asteroids.add(new Asteroid(asteroidImage, -Asteroid.getSize(), y, speed));
+        double velocityX = -(ASTEROID_MIN_SPEED + random.nextDouble() * ASTEROID_SPEED_RANGE);
+        double velocityY = createRandomVerticalVelocity();
+
+        asteroids.add(new Asteroid(asteroidImage, panelWidth, y, velocityX, velocityY));
+    }
+
+    private double createRandomVerticalVelocity() {
+        if (random.nextDouble() < STRAIGHT_ASTEROID_CHANCE) {
+            return 0.0;
+        }
+
+        double speed = ASTEROID_MIN_VERTICAL_SPEED
+            + random.nextDouble() * ASTEROID_VERTICAL_SPEED_RANGE;
+        return random.nextBoolean() ? speed : -speed;
+    }
+
+    private Rectangle getPlayerBounds() {
+        return new Rectangle(
+            (int) playerX + PLAYER_HITBOX_INSET,
+            (int) playerY + PLAYER_HITBOX_INSET,
+            PLAYER_WIDTH - PLAYER_HITBOX_INSET * 2,
+            PLAYER_HEIGHT - PLAYER_HITBOX_INSET * 2
+        );
+    }
+
+    private void damagePlayer() {
+        if (collisionInvulnerabilityRemaining > 0.0 || playerLives == 0) {
+            return;
+        }
+
+        playerLives--;
+        collisionInvulnerabilityRemaining = COLLISION_INVULNERABILITY_SECONDS;
     }
 
     // What is graphics g? a class that has many functions to draw objects on screen
@@ -251,5 +302,10 @@ public class GameController {
         // so as soon as score changes, it shows up immediately next render
         // string concatenation: "Score: " + 0 = "Score: 0"
         g.drawString("Score: " + scoreManager.getScore(), 10, 20);
+        g.drawString("Lives: " + playerLives, 10, 38);
+
+        if (playerLives == 0) {
+            g.drawString("GAME OVER", panelWidth / 2 - 35, panelHeight / 2);
+        }
     }
 }

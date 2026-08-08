@@ -28,8 +28,8 @@ public class GamePanel extends JPanel implements Runnable {
 	
 	// --- SCREEN SETTINGS ---
 	
-    private static final int SCREEN_WIDTH = 640;
-    private static final int SCREEN_HEIGHT = 480;
+    private static final int DEFAULT_SCREEN_WIDTH = 640;
+    private static final int DEFAULT_SCREEN_HEIGHT = 480;
     private static final int TARGET_FPS = 60;
     
     // --- THREAD CONTROL ---
@@ -60,11 +60,15 @@ public class GamePanel extends JPanel implements Runnable {
      * Called once when GameFrame creates a new GamePanel.
      */
     public GamePanel() {
+        this(DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT);
+    }
+
+    public GamePanel(int screenWidth, int screenHeight) {
     	
         // without this, addKeyListener won't work reliably
         setFocusable(true);
         
-        setPreferredSize(new Dimension(SCREEN_WIDTH, SCREEN_HEIGHT));
+        setPreferredSize(new Dimension(screenWidth, screenHeight));
         setBackground(Color.BLACK);
         
         // ALlows GUI receive keyboard focus
@@ -77,7 +81,7 @@ public class GamePanel extends JPanel implements Runnable {
         addKeyListener(inputManager);
 
         // pass the SAME object into gameController
-        this.gameController = new GameController(inputManager, SCREEN_WIDTH, SCREEN_HEIGHT);
+        this.gameController = new GameController(inputManager, screenWidth, screenHeight);
         
         // Instantiation of GameClock class
         this.gameClock = new GameClock(TARGET_FPS);
