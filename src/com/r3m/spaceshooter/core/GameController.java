@@ -7,9 +7,7 @@ import com.r3m.spaceshooter.system.AssetManager;
 import com.r3m.spaceshooter.system.CollisionManager;
 import com.r3m.spaceshooter.system.InputManager;
 import com.r3m.spaceshooter.system.ScoreManager;
-import java.awt.AlphaComposite;
 import java.awt.Color;
-import java.awt.Font;
 import java.awt.GradientPaint;
 import java.awt.Graphics2D;
 import java.awt.Paint;
@@ -35,17 +33,6 @@ public class GameController {
 	 * it orchestrates game logic but does NOT manage the window,
 	 * the game loop, or keyboard events directly.
 	 */
-
-    private enum GameState {
-        MENU,
-        INSTRUCTIONS,
-        CONTROLS,
-        PLAYING
-    }
-
-    private volatile GameState gameState = GameState.MENU;
-    private String menuMessage = "SELECT AN OPTION USING KEYS 1 - 4";
-    private volatile double menuAnimationTime;
 
     // --- SCREEN BOUNDARIES ---
 
@@ -176,12 +163,6 @@ public class GameController {
         // The starfield keeps moving both in the menu and during gameplay.
         updateStars(deltaTime);
 
-        if (gameState != GameState.PLAYING) {
-            menuAnimationTime += deltaTime;
-            updateMenu();
-            return;
-        }
-
         collisionInvulnerabilityRemaining = Math.max(
             0.0,
             collisionInvulnerabilityRemaining - deltaTime
@@ -307,58 +288,6 @@ public class GameController {
                 stars.add(createStar(panelWidth));
             }
         }
-    }
-
-    private void updateMenu() {
-        int choice = inputManager.consumeMenuChoice();
-        if (choice == InputManager.NO_MENU_CHOICE) {
-            return;
-        }
-
-        if (gameState == GameState.MENU) {
-            switch (choice) {
-                case 1 -> startNewGame();
-                case 2 -> {
-                    gameState = GameState.INSTRUCTIONS;
-                    menuMessage = "PRESS 0 TO RETURN TO THE MAIN MENU";
-                }
-                case 3 -> {
-                    gameState = GameState.CONTROLS;
-                    menuMessage = "PRESS 0 TO RETURN TO THE MAIN MENU";
-                }
-                case 4 -> System.exit(0);
-                default -> menuMessage = "INVALID OPTION - PLEASE CHOOSE 1, 2, 3, OR 4";
-            }
-            return;
-        }
-
-        if (choice == 0) {
-            gameState = GameState.MENU;
-            menuMessage = "SELECT AN OPTION USING KEYS 1 - 4";
-        } else {
-            menuMessage = "INVALID OPTION - PRESS 0 TO RETURN";
-        }
-    }
-
-    private void startNewGame() {
-        playerX = 200;
-        playerY = panelHeight / 2.0 - PLAYER_HEIGHT / 2.0;
-        velocityX = 0;
-        velocityY = 0;
-        playerLives = STARTING_LIVES;
-        collisionInvulnerabilityRemaining = 0;
-        asteroidSpawnTimer = 0;
-        scoreManager.reset();
-
-        synchronized (asteroids) {
-            asteroids.clear();
-        }
-
-        synchronized (explosions) {
-            explosions.clear();
-        }
-
-        gameState = GameState.PLAYING;
     }
 
     private void updateAsteroids(double deltaTime) {
@@ -536,11 +465,6 @@ public class GameController {
             }
         }
 
-        if (gameState != GameState.PLAYING) {
-            renderTextMenu(g);
-            return;
-        }
-
         // Draw the player sprite at its current movement position.
 
         // cast double positions to int — screen pixels must be whole numbers
@@ -595,258 +519,6 @@ public class GameController {
         ));
         g.fillRect(0, 0, panelWidth, panelHeight);
         g.setPaint(oldPaint);
-    }
-
-    private void renderTextMenu(Graphics2D g) {
-        renderMenuBackgroundDecorations(g);
-
-        if (gameState == GameState.INSTRUCTIONS) {
-            renderInformationPage(
-                g,
-                "INSTRUCTIONS",
-                new String[] {
-                    "Pilot your spaceship through the asteroid field.",
-                    "Avoid incoming asteroids and survive as long as possible.",
-                    "Every collision costs one life. You start with three lives."
-                }
-            );
-            return;
-        }
-
-        if (gameState == GameState.CONTROLS) {
-            renderInformationPage(
-                g,
-                "VIEW CONTROLS",
-                new String[] {
-                    "W  -  MOVE UP",
-                    "A  -  MOVE LEFT",
-                    "S  -  MOVE DOWN",
-                    "D  -  MOVE RIGHT",
-                    "ESC  -  EXIT GAME"
-                }
-            );
-            return;
-        }
-
-        String[] asciiTitle = {
-            " ____  ____   _    ____ _____     ____  _   _  ___   ___ _____ _____ ____    _   _ ____  ",
-            "/ ___||  _ \\ / \\  / ___| ____|   / ___|| | | |/ _ \\ / _ \\_   _| ____|  _ \\  | | | |  _ \\ ",
-            "\\___ \\| |_) / _ \\| |   |  _|     \\___ \\| |_| | | | | | | || | |  _| | |_) | | |_| | | | |",
-            " ___) |  __/ ___ \\ |___| |___     ___) |  _  | |_| | |_| || | | |___|  _ <  |  _  | |_| |",
-            "|____/|_| /_/   \\_\\____|_____|   |____/|_| |_|\\___/ \\___/ |_| |_____|_| \\_\\ |_| |_|____/ "
-        };
-
-        int asciiSize = Math.max(8, Math.min(22, panelWidth / 70));
-        g.setFont(new Font("Monospaced", Font.BOLD, asciiSize));
-        int y = Math.max(90, panelHeight / 6);
-
-        g.setColor(new Color(115, 225, 255));
-        for (String line : asciiTitle) {
-            drawCenteredGlowString(g, line, y);
-            y += asciiSize + 4;
-        }
-
-        renderAnimatedMenuShip(g, y + 12);
-
-        String[] options = {
-            "[1]  START GAME",
-            "[2]  INSTRUCTIONS",
-            "[3]  VIEW CONTROLS",
-            "[4]  EXIT"
-        };
-
-        g.setFont(new Font("Monospaced", Font.BOLD, 22));
-        int optionY = Math.max(y + 105, panelHeight / 2 - 5);
-        renderMenuDivider(g, optionY - 42);
-
-        for (String option : options) {
-            g.setColor(new Color(225, 245, 255));
-            drawCenteredString(g, option, optionY);
-            optionY += 42;
-        }
-
-        g.setFont(new Font("Monospaced", Font.BOLD, 14));
-        boolean invalid = menuMessage.startsWith("INVALID");
-        int pulse = 175 + (int) (Math.sin(menuAnimationTime * 3.0) * 45);
-        g.setColor(invalid ? new Color(255, 110, 110) : new Color(80, pulse, 235));
-        drawCenteredString(g, menuMessage, Math.min(panelHeight - 40, optionY + 25));
-    }
-
-    private void renderMenuBackgroundDecorations(Graphics2D g) {
-        renderShootingStars(g);
-        renderDecorativeAsteroids(g);
-
-        // Symmetrical HUD corners frame the screen without covering content.
-        int margin = 34;
-        int cornerLength = Math.max(55, Math.min(120, panelWidth / 10));
-        g.setColor(new Color(55, 185, 220, 90));
-        g.drawLine(margin, margin, margin + cornerLength, margin);
-        g.drawLine(margin, margin, margin, margin + cornerLength / 2);
-        g.drawLine(panelWidth - margin, margin, panelWidth - margin - cornerLength, margin);
-        g.drawLine(panelWidth - margin, margin, panelWidth - margin, margin + cornerLength / 2);
-        g.drawLine(margin, panelHeight - margin, margin + cornerLength, panelHeight - margin);
-        g.drawLine(margin, panelHeight - margin, margin, panelHeight - margin - cornerLength / 2);
-        g.drawLine(
-            panelWidth - margin,
-            panelHeight - margin,
-            panelWidth - margin - cornerLength,
-            panelHeight - margin
-        );
-        g.drawLine(
-            panelWidth - margin,
-            panelHeight - margin,
-            panelWidth - margin,
-            panelHeight - margin - cornerLength / 2
-        );
-    }
-
-    private void renderShootingStars(Graphics2D g) {
-        int travelWidth = panelWidth + 360;
-
-        for (int i = 0; i < 3; i++) {
-            double offset = menuAnimationTime * (150 + i * 35) + i * panelWidth * 0.37;
-            int x = (int) (offset % travelWidth) - 180;
-            int y = 70 + i * Math.max(70, panelHeight / 6);
-            int tailLength = 65 + i * 18;
-
-            g.setColor(new Color(60, 205, 255, 35));
-            g.drawLine(x - tailLength - 35, y + 14, x, y);
-            g.setColor(new Color(115, 230, 255, 105));
-            g.drawLine(x - tailLength, y + 10, x, y);
-            g.setColor(new Color(235, 255, 255, 190));
-            g.fillRect(x - 1, y - 1, 3, 3);
-        }
-    }
-
-    private void renderDecorativeAsteroids(Graphics2D g) {
-        if (asteroidImage == null) {
-            return;
-        }
-
-        Graphics2D decoration = (Graphics2D) g.create();
-        decoration.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.28f));
-
-        int largeSize = Math.max(70, Math.min(125, panelWidth / 11));
-        int largeX = Math.max(35, panelWidth / 14);
-        int largeY = panelHeight / 2 - largeSize / 2;
-        double largeAngle = menuAnimationTime * 0.16;
-        decoration.rotate(
-            largeAngle,
-            largeX + largeSize / 2.0,
-            largeY + largeSize / 2.0
-        );
-        decoration.drawImage(asteroidImage, largeX, largeY, largeSize, largeSize, null);
-        decoration.dispose();
-
-        Graphics2D secondDecoration = (Graphics2D) g.create();
-        secondDecoration.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.20f));
-        int smallSize = Math.max(48, Math.min(82, panelWidth / 17));
-        int smallX = panelWidth - Math.max(105, panelWidth / 9);
-        int smallY = Math.max(110, panelHeight / 3);
-        double smallAngle = -menuAnimationTime * 0.22;
-        secondDecoration.rotate(
-            smallAngle,
-            smallX + smallSize / 2.0,
-            smallY + smallSize / 2.0
-        );
-        secondDecoration.drawImage(
-            asteroidImage,
-            smallX,
-            smallY,
-            smallSize,
-            smallSize,
-            null
-        );
-        secondDecoration.dispose();
-    }
-
-    private void renderMenuDivider(Graphics2D g, int y) {
-        int halfGap = 38;
-        int lineLength = Math.max(80, Math.min(210, panelWidth / 6));
-        int centerX = panelWidth / 2;
-        int pulse = 120 + (int) ((Math.sin(menuAnimationTime * 2.5) + 1.0) * 45);
-
-        g.setColor(new Color(55, pulse, 235, 145));
-        g.drawLine(centerX - halfGap - lineLength, y, centerX - halfGap, y);
-        g.drawLine(centerX + halfGap, y, centerX + halfGap + lineLength, y);
-
-        int diamondSize = 6;
-        int[] diamondX = {
-            centerX,
-            centerX + diamondSize,
-            centerX,
-            centerX - diamondSize
-        };
-        int[] diamondY = {
-            y - diamondSize,
-            y,
-            y + diamondSize,
-            y
-        };
-        g.fillPolygon(diamondX, diamondY, 4);
-    }
-
-    private void renderAnimatedMenuShip(Graphics2D g, int y) {
-        if (spaceshipImage == null) {
-            return;
-        }
-
-        int shipWidth = Math.max(62, Math.min(92, panelWidth / 14));
-        int shipHeight = shipWidth * PLAYER_HEIGHT / PLAYER_WIDTH;
-        int drift = (int) (Math.sin(menuAnimationTime * 1.4) * 28);
-        int bob = (int) (Math.sin(menuAnimationTime * 2.2) * 5);
-        int shipX = (panelWidth - shipWidth) / 2 + drift;
-        int shipY = y + bob;
-        int engineY = shipY + shipHeight / 2;
-        int trailLength = 32 + (int) ((Math.sin(menuAnimationTime * 7.0) + 1.0) * 8);
-
-        // Soft glow behind the ship.
-        g.setColor(new Color(20, 190, 255, 45));
-        g.fillOval(shipX - 16, shipY - 8, shipWidth + 32, shipHeight + 16);
-
-        // Animated engine trail.
-        g.setColor(new Color(55, 220, 255, 160));
-        g.drawLine(shipX - trailLength, engineY, shipX - 5, engineY);
-        g.setColor(new Color(120, 235, 255, 80));
-        g.drawLine(shipX - trailLength / 2, engineY - 5, shipX - 4, engineY - 5);
-        g.drawLine(shipX - trailLength / 2, engineY + 5, shipX - 4, engineY + 5);
-
-        g.drawImage(spaceshipImage, shipX, shipY, shipWidth, shipHeight, null);
-    }
-
-    private void renderInformationPage(Graphics2D g, String heading, String[] lines) {
-        g.setFont(new Font("Monospaced", Font.BOLD, 38));
-        g.setColor(new Color(115, 225, 255));
-        drawCenteredString(g, "+=== " + heading + " ===+", panelHeight / 3);
-
-        g.setFont(new Font("Monospaced", Font.PLAIN, 18));
-        int y = panelHeight / 3 + 75;
-        for (String line : lines) {
-            g.setColor(new Color(225, 245, 255));
-            drawCenteredString(g, line, y);
-            y += 38;
-        }
-
-        g.setFont(new Font("Monospaced", Font.BOLD, 15));
-        boolean invalid = menuMessage.startsWith("INVALID");
-        g.setColor(invalid ? new Color(255, 110, 110) : new Color(100, 190, 220));
-        drawCenteredString(g, menuMessage, y + 60);
-    }
-
-    private void drawCenteredString(Graphics2D g, String text, int baseline) {
-        int x = (panelWidth - g.getFontMetrics().stringWidth(text)) / 2;
-        g.drawString(text, x, baseline);
-    }
-
-    private void drawCenteredGlowString(Graphics2D g, String text, int baseline) {
-        int x = (panelWidth - g.getFontMetrics().stringWidth(text)) / 2;
-        g.setColor(new Color(20, 175, 255, 42));
-        g.drawString(text, x - 2, baseline);
-        g.drawString(text, x + 2, baseline);
-        g.drawString(text, x, baseline - 2);
-        g.drawString(text, x, baseline + 2);
-        g.setColor(new Color(115, 225, 255));
-        g.drawString(text, x, baseline);
     }
 
 }
