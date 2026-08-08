@@ -7,16 +7,11 @@ import com.r3m.spaceshooter.system.AssetManager;
 import com.r3m.spaceshooter.system.CollisionManager;
 import com.r3m.spaceshooter.system.InputManager;
 import com.r3m.spaceshooter.system.ScoreManager;
-import java.awt.AlphaComposite;
-import java.awt.BasicStroke;
 import java.awt.Color;
-import java.awt.Composite;
-import java.awt.Font;
 import java.awt.GradientPaint;
 import java.awt.Graphics2D;
 import java.awt.Paint;
 import java.awt.Rectangle;
-import java.awt.Stroke;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -39,13 +34,6 @@ public class GameController {
 	 * the game loop, or keyboard events directly.
 	 */
 
-    private enum GameState {
-        MENU,
-        PLAYING
-    }
-
-    private GameState gameState = GameState.MENU;
-	
     // --- SCREEN BOUNDARIES ---
 
     // width of the game panel in pixels
@@ -133,7 +121,6 @@ public class GameController {
     private static final int STAR_COUNT = 120;
     private static final double STAR_MIN_SPEED = 60.0;
     private static final double STAR_SPEED_RANGE = 180.0;
-    private double menuAnimationTime;
 
     public GameController(InputManager inputManager, int panelWidth, int panelHeight) {
         /**
@@ -175,20 +162,6 @@ public class GameController {
 
         // The starfield keeps moving both in the menu and during gameplay.
         updateStars(deltaTime);
-
-        if (gameState == GameState.MENU) {
-            menuAnimationTime += deltaTime;
-            boolean buttonClicked = inputManager.consumePrimaryClick()
-                && getStartButtonBounds().contains(
-                    inputManager.getMouseX(),
-                    inputManager.getMouseY()
-                );
-
-            if (inputManager.isSpacePressed() || buttonClicked) {
-                startNewGame();
-            }
-            return;
-        }
 
         collisionInvulnerabilityRemaining = Math.max(
             0.0,
@@ -315,34 +288,6 @@ public class GameController {
                 stars.add(createStar(panelWidth));
             }
         }
-    }
-
-    private void startNewGame() {
-        gameState = GameState.PLAYING;
-        playerX = 200;
-        playerY = panelHeight / 2.0 - PLAYER_HEIGHT / 2.0;
-        velocityX = 0;
-        velocityY = 0;
-        playerLives = STARTING_LIVES;
-        collisionInvulnerabilityRemaining = 0;
-        asteroidSpawnTimer = 0;
-        scoreManager.reset();
-
-        synchronized (asteroids) {
-            asteroids.clear();
-        }
-
-        synchronized (explosions) {
-            explosions.clear();
-        }
-    }
-
-    private Rectangle getStartButtonBounds() {
-        int width = Math.min(390, Math.max(260, panelWidth - 80));
-        int height = 76;
-        int x = (panelWidth - width) / 2;
-        int y = (int) (panelHeight * 0.68) - height / 2;
-        return new Rectangle(x, y, width, height);
     }
 
     private void updateAsteroids(double deltaTime) {
@@ -520,11 +465,6 @@ public class GameController {
             }
         }
 
-        if (gameState == GameState.MENU) {
-            renderMainMenu(g);
-            return;
-        }
-
         // Draw the player sprite at its current movement position.
 
         // cast double positions to int — screen pixels must be whole numbers
@@ -581,108 +521,4 @@ public class GameController {
         g.setPaint(oldPaint);
     }
 
-    private void renderMainMenu(Graphics2D g) {
-        int titleSize = Math.max(48, Math.min(92, panelWidth / 15));
-        int titleBaseline = panelHeight / 3;
-
-        // Small studio-style heading.
-        g.setFont(new Font("SansSerif", Font.BOLD, 14));
-        g.setColor(new Color(120, 190, 230));
-        drawCenteredString(g, "R3M  //  INTERSTELLAR COMMAND", titleBaseline - titleSize);
-
-        // Layered text creates a neon glow without needing another image asset.
-        Font titleFont = new Font("SansSerif", Font.BOLD | Font.ITALIC, titleSize);
-        g.setFont(titleFont);
-        drawGlowText(g, "SPACE SHOOTER", titleBaseline);
-
-        g.setFont(new Font("SansSerif", Font.BOLD, Math.max(18, titleSize / 3)));
-        g.setColor(new Color(100, 225, 255));
-        drawCenteredString(g, "—  H D  —", titleBaseline + titleSize / 2);
-
-        renderMenuSpaceship(g);
-        renderStartButton(g);
-
-        g.setFont(new Font("SansSerif", Font.PLAIN, 15));
-        g.setColor(new Color(145, 165, 190));
-        drawCenteredString(g, "W A S D   TO MOVE     •     ESC   TO EXIT", (int) (panelHeight * 0.84));
-
-        g.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        g.setColor(new Color(70, 115, 145));
-        drawCenteredString(g, "SYSTEM READY  //  AWAITING PILOT", panelHeight - 32);
-    }
-
-    private void drawGlowText(Graphics2D g, String text, int baseline) {
-        int x = (panelWidth - g.getFontMetrics().stringWidth(text)) / 2;
-        Composite oldComposite = g.getComposite();
-
-        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.15f));
-        g.setColor(new Color(0, 210, 255));
-        for (int offset = 10; offset >= 2; offset -= 2) {
-            g.drawString(text, x - offset, baseline);
-            g.drawString(text, x + offset, baseline);
-            g.drawString(text, x, baseline - offset);
-            g.drawString(text, x, baseline + offset);
-        }
-
-        g.setComposite(oldComposite);
-        g.setColor(new Color(235, 252, 255));
-        g.drawString(text, x, baseline);
-    }
-
-    private void renderMenuSpaceship(Graphics2D g) {
-        if (spaceshipImage == null) {
-            return;
-        }
-
-        int shipWidth = 105;
-        int shipHeight = 92;
-        int shipX = (panelWidth - shipWidth) / 2;
-        int shipY = (int) (panelHeight * 0.49 + Math.sin(menuAnimationTime * 2.0) * 7);
-
-        Composite oldComposite = g.getComposite();
-        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.22f));
-        g.setColor(new Color(0, 210, 255));
-        g.fillOval(shipX - 35, shipY + 20, shipWidth + 70, shipHeight / 2);
-        g.setComposite(oldComposite);
-        g.drawImage(spaceshipImage, shipX, shipY, shipWidth, shipHeight, null);
-    }
-
-    private void renderStartButton(Graphics2D g) {
-        Rectangle button = getStartButtonBounds();
-        boolean hovered = button.contains(inputManager.getMouseX(), inputManager.getMouseY());
-        double wave = (Math.sin(menuAnimationTime * 3.0) + 1.0) / 2.0;
-        int fillAlpha = hovered ? 105 : 45 + (int) (wave * 30);
-
-        Composite oldComposite = g.getComposite();
-        Stroke oldStroke = g.getStroke();
-
-        // Outer glow and dark glass-like button body.
-        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, hovered ? 0.28f : 0.16f));
-        g.setColor(new Color(0, 220, 255));
-        g.fillRoundRect(button.x - 9, button.y - 9, button.width + 18, button.height + 18, 28, 28);
-        g.setComposite(oldComposite);
-
-        g.setColor(new Color(12, 80, 120, fillAlpha));
-        g.fillRoundRect(button.x, button.y, button.width, button.height, 22, 22);
-
-        g.setStroke(new BasicStroke(hovered ? 3.0f : 2.0f));
-        g.setColor(hovered ? new Color(150, 245, 255) : new Color(45, 205, 240));
-        g.drawRoundRect(button.x, button.y, button.width, button.height, 22, 22);
-
-        g.setFont(new Font("SansSerif", Font.BOLD, 24));
-        g.setColor(Color.WHITE);
-        int textBaseline = button.y + (button.height + g.getFontMetrics().getAscent()) / 2 - 4;
-        drawCenteredString(g, "PRESS TO START", textBaseline);
-
-        g.setFont(new Font("SansSerif", Font.PLAIN, 11));
-        g.setColor(new Color(135, 210, 230));
-        drawCenteredString(g, "CLICK  OR  PRESS  SPACE", button.y + button.height + 22);
-
-        g.setStroke(oldStroke);
-    }
-
-    private void drawCenteredString(Graphics2D g, String text, int baseline) {
-        int x = (panelWidth - g.getFontMetrics().stringWidth(text)) / 2;
-        g.drawString(text, x, baseline);
-    }
 }
