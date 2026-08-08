@@ -7,6 +7,7 @@ import com.r3m.spaceshooter.system.AssetManager;
 import com.r3m.spaceshooter.system.CollisionManager;
 import com.r3m.spaceshooter.system.InputManager;
 import com.r3m.spaceshooter.system.ScoreManager;
+import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GradientPaint;
@@ -639,32 +640,9 @@ public class GameController {
         g.setFont(new Font("Monospaced", Font.BOLD, asciiSize));
         int y = Math.max(90, panelHeight / 6);
 
-        int titlePanelWidth = Math.min(panelWidth - 70, 1060);
-        int titlePanelHeight = asciiTitle.length * (asciiSize + 4) + 24;
-        int titlePanelX = (panelWidth - titlePanelWidth) / 2;
-        int titlePanelY = y - asciiSize - 12;
-        g.setColor(new Color(2, 13, 34, 225));
-        g.fillRoundRect(
-            titlePanelX,
-            titlePanelY,
-            titlePanelWidth,
-            titlePanelHeight,
-            20,
-            20
-        );
-        g.setColor(new Color(45, 175, 215, 95));
-        g.drawRoundRect(
-            titlePanelX,
-            titlePanelY,
-            titlePanelWidth,
-            titlePanelHeight,
-            20,
-            20
-        );
-
         g.setColor(new Color(115, 225, 255));
         for (String line : asciiTitle) {
-            drawCenteredString(g, line, y);
+            drawCenteredGlowString(g, line, y);
             y += asciiSize + 4;
         }
 
@@ -682,16 +660,6 @@ public class GameController {
         renderMenuDivider(g, optionY - 42);
 
         for (String option : options) {
-            int boxWidth = Math.min(390, panelWidth - 80);
-            int boxHeight = 36;
-            int boxX = (panelWidth - boxWidth) / 2;
-            int boxY = optionY - g.getFontMetrics().getAscent() - 7;
-
-            g.setColor(new Color(5, 31, 63));
-            g.fillRoundRect(boxX, boxY, boxWidth, boxHeight, 12, 12);
-            g.setColor(new Color(45, 175, 215, 125));
-            g.drawRoundRect(boxX, boxY, boxWidth, boxHeight, 12, 12);
-
             g.setColor(new Color(225, 245, 255));
             drawCenteredString(g, option, optionY);
             optionY += 42;
@@ -705,22 +673,8 @@ public class GameController {
     }
 
     private void renderMenuBackgroundDecorations(Graphics2D g) {
-        // A large translucent planet gives the cover more depth.
-        int planetSize = Math.max(220, Math.min(390, panelWidth / 4));
-        int planetX = panelWidth - planetSize + planetSize / 5;
-        int planetY = panelHeight - planetSize / 2;
-        g.setColor(new Color(25, 115, 165, 35));
-        g.fillOval(planetX, planetY, planetSize, planetSize);
-        g.setColor(new Color(75, 205, 235, 55));
-        g.drawOval(planetX, planetY, planetSize, planetSize);
-        g.drawArc(
-            planetX - planetSize / 5,
-            planetY + planetSize / 3,
-            planetSize + planetSize / 2,
-            planetSize / 3,
-            8,
-            165
-        );
+        renderShootingStars(g);
+        renderDecorativeAsteroids(g);
 
         // Symmetrical HUD corners frame the screen without covering content.
         int margin = 34;
@@ -744,6 +698,66 @@ public class GameController {
             panelWidth - margin,
             panelHeight - margin - cornerLength / 2
         );
+    }
+
+    private void renderShootingStars(Graphics2D g) {
+        int travelWidth = panelWidth + 360;
+
+        for (int i = 0; i < 3; i++) {
+            double offset = menuAnimationTime * (150 + i * 35) + i * panelWidth * 0.37;
+            int x = (int) (offset % travelWidth) - 180;
+            int y = 70 + i * Math.max(70, panelHeight / 6);
+            int tailLength = 65 + i * 18;
+
+            g.setColor(new Color(60, 205, 255, 35));
+            g.drawLine(x - tailLength - 35, y + 14, x, y);
+            g.setColor(new Color(115, 230, 255, 105));
+            g.drawLine(x - tailLength, y + 10, x, y);
+            g.setColor(new Color(235, 255, 255, 190));
+            g.fillRect(x - 1, y - 1, 3, 3);
+        }
+    }
+
+    private void renderDecorativeAsteroids(Graphics2D g) {
+        if (asteroidImage == null) {
+            return;
+        }
+
+        Graphics2D decoration = (Graphics2D) g.create();
+        decoration.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.28f));
+
+        int largeSize = Math.max(70, Math.min(125, panelWidth / 11));
+        int largeX = Math.max(35, panelWidth / 14);
+        int largeY = panelHeight / 2 - largeSize / 2;
+        double largeAngle = menuAnimationTime * 0.16;
+        decoration.rotate(
+            largeAngle,
+            largeX + largeSize / 2.0,
+            largeY + largeSize / 2.0
+        );
+        decoration.drawImage(asteroidImage, largeX, largeY, largeSize, largeSize, null);
+        decoration.dispose();
+
+        Graphics2D secondDecoration = (Graphics2D) g.create();
+        secondDecoration.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.20f));
+        int smallSize = Math.max(48, Math.min(82, panelWidth / 17));
+        int smallX = panelWidth - Math.max(105, panelWidth / 9);
+        int smallY = Math.max(110, panelHeight / 3);
+        double smallAngle = -menuAnimationTime * 0.22;
+        secondDecoration.rotate(
+            smallAngle,
+            smallX + smallSize / 2.0,
+            smallY + smallSize / 2.0
+        );
+        secondDecoration.drawImage(
+            asteroidImage,
+            smallX,
+            smallY,
+            smallSize,
+            smallSize,
+            null
+        );
+        secondDecoration.dispose();
     }
 
     private void renderMenuDivider(Graphics2D g, int y) {
@@ -821,6 +835,17 @@ public class GameController {
 
     private void drawCenteredString(Graphics2D g, String text, int baseline) {
         int x = (panelWidth - g.getFontMetrics().stringWidth(text)) / 2;
+        g.drawString(text, x, baseline);
+    }
+
+    private void drawCenteredGlowString(Graphics2D g, String text, int baseline) {
+        int x = (panelWidth - g.getFontMetrics().stringWidth(text)) / 2;
+        g.setColor(new Color(20, 175, 255, 42));
+        g.drawString(text, x - 2, baseline);
+        g.drawString(text, x + 2, baseline);
+        g.drawString(text, x, baseline - 2);
+        g.drawString(text, x, baseline + 2);
+        g.setColor(new Color(115, 225, 255));
         g.drawString(text, x, baseline);
     }
 
