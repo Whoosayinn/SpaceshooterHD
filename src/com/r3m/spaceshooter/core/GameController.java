@@ -334,6 +334,7 @@ public class GameController {
                 }
 
                 if (collisionManager.isColliding(getPlayerBounds(), asteroid.getBounds())) {
+                    createExplosion(asteroid.getCenterX(), asteroid.getCenterY());
                     iterator.remove();
                     damagePlayer();
                 }
