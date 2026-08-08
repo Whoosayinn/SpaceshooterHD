@@ -12,8 +12,11 @@ import com.r3m.spaceshooter.system.AssetManager;
 import com.r3m.spaceshooter.system.CollisionManager;
 import com.r3m.spaceshooter.system.InputManager;
 import com.r3m.spaceshooter.system.ScoreManager;
+import com.r3m.spaceshooter.system.SpriteSheet;
+
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
@@ -52,20 +55,22 @@ public class GameController {
     // this class can access or replace these manager objects directly
 
     // reads keyboard state — which keys are currently held down
-    InputManager inputManager;
+    private final InputManager inputManager;
 
     // checks whether two game entities are overlapping
-    CollisionManager collisionManager;
+    private final CollisionManager collisionManager;
 
     // loads and caches image assets from disk
-    AssetManager assetManager;
-    ScoreManager scoreManager;
+    private final AssetManager assetManager;
+    private final ScoreManager scoreManager;
 
     // --- PLAYER ---
     private static final int PLAYER_WIDTH = 64;
     private static final int PLAYER_HEIGHT = 56;
     private final PlayerSpaceship player;
 
+    private final SpriteSheet playerSpriteSheet;
+    
     // --- ASTEROID STATE ---
 
     private static final double ASTEROID_SPAWN_INTERVAL = 0.5;
@@ -114,19 +119,20 @@ public class GameController {
     private final BufferedImage gruntImage;
     private final BufferedImage eliteImage;
 
-    public GameController(InputManager inputManager, int panelWidth, int panelHeight) {
-        /**
-         * Constructor — initializes all managers and stores screen boundaries.
-         * Called once by GamePanel when the game starts.
-         *
-         * @param inputManager the shared InputManager that receives keyboard events
-         * @param panelWidth   the width of the game surface in pixels
-         * @param panelHeight  the height of the game surface in pixels
-         */
+    /**
+     * Constructor — initializes all managers and stores screen boundaries.
+     * Called once by GamePanel when the game starts.
+     *
+     * @param inputManager the shared InputManager that receives keyboard events
+     * @param panelWidth   the width of the game surface in pixels
+     * @param panelHeight  the height of the game surface in pixels
+     */
 
-        // store the shared InputManager — this is the SAME object
-        // that GamePanel attached to addKeyListener()
-        // so key presses flow: keyboard → InputManager → here → player movement
+    // store the shared InputManager — this is the SAME object
+    // that GamePanel attached to addKeyListener()
+    // so key presses flow: keyboard → InputManager → here → player movement
+    public GameController(InputManager inputManager, int panelWidth, int panelHeight) {
+
         this.inputManager = inputManager;
 
         // store screen dimensions for boundary clamping in update()
@@ -136,11 +142,29 @@ public class GameController {
         this.collisionManager = new CollisionManager();
         this.assetManager = AssetManager.getInstance();
         this.scoreManager = new ScoreManager();
-        BufferedImage spaceshipImage = assetManager.loadImage("/assets/spaceship.png");
-        this.player = new PlayerSpaceship(
-            spaceshipImage, 200, 250, PLAYER_WIDTH, PLAYER_HEIGHT,
-            inputManager, panelWidth, panelHeight
-        );
+        
+        BufferedImage sheetImage = assetManager.loadImage("/assets/player_sprite.png");
+        if (sheetImage != null) {
+            // slice the 25-frame sheet into a 5x5 grid
+            this.playerSpriteSheet = new SpriteSheet(sheetImage, 5, 5);
+
+            // use the animated constructor — passes spritesheet to PlayerSpaceship
+            this.player = new PlayerSpaceship(
+                playerSpriteSheet,
+                200, 250, PLAYER_WIDTH, PLAYER_HEIGHT,
+                inputManager, panelWidth, panelHeight
+            );
+        } else {
+            // fallback — spritesheet didn't load, use static image instead
+            this.playerSpriteSheet = null;
+            BufferedImage fallbackImage = assetManager.loadImage("/assets/spaceship.png");
+            this.player = new PlayerSpaceship(
+                fallbackImage,
+                200, 250, PLAYER_WIDTH, PLAYER_HEIGHT,
+                inputManager, panelWidth, panelHeight
+            );
+        }
+        
         this.asteroidImage = assetManager.loadImage("/assets/asteroid.png");
         this.gruntImage = assetManager.loadImage("/assets/enemy_grunt.png");
         this.eliteImage = assetManager.loadImage("/assets/enemy_elite.png");
@@ -531,7 +555,7 @@ public class GameController {
         return random.nextBoolean() ? speed : -speed;
     }
 
-    private Rectangle getPlayerBounds() {
+    private Polygon getPlayerBounds() {
         return player.getHitbox();
     }
 
