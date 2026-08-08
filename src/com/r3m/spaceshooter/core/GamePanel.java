@@ -79,6 +79,8 @@ public class GamePanel extends JPanel implements Runnable {
 
         // allow the specified key listener to 
         addKeyListener(inputManager);
+        addMouseListener(inputManager);
+        addMouseMotionListener(inputManager);
 
         // pass the SAME object into gameController
         this.gameController = new GameController(inputManager, screenWidth, screenHeight);
