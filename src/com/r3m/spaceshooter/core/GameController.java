@@ -624,14 +624,14 @@ public class GameController {
         }
 
         String[] asciiTitle = {
-            "  ____  ____   _    ____ _____ ",
-            " / ___||  _ \\ / \\  / ___| ____|",
-            " \\___ \\| |_) / _ \\| |   |  _| ",
-            "  ___) |  __/ ___ \\ |___| |___ ",
-            " |____/|_| /_/   \\_\\____|_____|"
+            " ____  ____   _    ____ _____     ____  _   _  ___   ___ _____ _____ ____    _   _ ____  ",
+            "/ ___||  _ \\ / \\  / ___| ____|   / ___|| | | |/ _ \\ / _ \\_   _| ____|  _ \\  | | | |  _ \\ ",
+            "\\___ \\| |_) / _ \\| |   |  _|     \\___ \\| |_| | | | | | | || | |  _| | |_) | | |_| | | | |",
+            " ___) |  __/ ___ \\ |___| |___     ___) |  _  | |_| | |_| || | | |___|  _ <  |  _  | |_| |",
+            "|____/|_| /_/   \\_\\____|_____|   |____/|_| |_|\\___/ \\___/ |_| |_____|_| \\_\\ |_| |_|____/ "
         };
 
-        int asciiSize = Math.max(14, Math.min(24, panelWidth / 45));
+        int asciiSize = Math.max(8, Math.min(22, panelWidth / 70));
         g.setFont(new Font("Monospaced", Font.BOLD, asciiSize));
         g.setColor(new Color(115, 225, 255));
         int y = Math.max(90, panelHeight / 6);
@@ -639,10 +639,6 @@ public class GameController {
             drawCenteredString(g, line, y);
             y += asciiSize + 4;
         }
-
-        g.setFont(new Font("Monospaced", Font.BOLD, Math.max(18, asciiSize)));
-        g.setColor(Color.WHITE);
-        drawCenteredString(g, "S H O O T E R   H D", y + 16);
 
         String[] options = {
             "[1]  START GAME",
@@ -652,7 +648,7 @@ public class GameController {
         };
 
         g.setFont(new Font("Monospaced", Font.BOLD, 22));
-        int optionY = Math.max(y + 95, panelHeight / 2 + 35);
+        int optionY = Math.max(y + 70, panelHeight / 2 + 35);
         for (String option : options) {
             g.setColor(new Color(225, 245, 255));
             drawCenteredString(g, option, optionY);
