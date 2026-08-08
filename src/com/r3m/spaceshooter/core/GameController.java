@@ -177,6 +177,7 @@ public class GameController {
 
         if (gameState != GameState.PLAYING) {
             menuAnimationTime += deltaTime;
+            handleWindowMenuInput();
             return;
         }
 
@@ -338,6 +339,30 @@ public class GameController {
 
     public void showControls() {
         gameState = GameState.CONTROLS;
+    }
+
+    private void handleWindowMenuInput() {
+        int choice = inputManager.consumeMenuChoice();
+        if (choice == InputManager.NO_MENU_CHOICE) {
+            return;
+        }
+
+        if (gameState == GameState.MENU) {
+            switch (choice) {
+                case 1 -> beginGameplay();
+                case 2 -> showInstructions();
+                case 3 -> showControls();
+                case 4 -> System.exit(0);
+                default -> {
+                    // Only options 1-4 are accepted on the main menu.
+                }
+            }
+            return;
+        }
+
+        if (choice == 0) {
+            showMainMenu();
+        }
     }
 
     private void updateAsteroids(double deltaTime) {
@@ -643,7 +668,7 @@ public class GameController {
         int pulse = 175 + (int) (Math.sin(menuAnimationTime * 3.0) * 45);
         g.setFont(new Font("Monospaced", Font.BOLD, 13));
         g.setColor(new Color(75, pulse, 240));
-        drawCenteredString(g, "TYPE A NUMBER FROM 1 - 4 IN THE TERMINAL", optionY + 28);
+        drawCenteredString(g, "PRESS 1 - 4 HERE  OR  TYPE IT IN THE TERMINAL", optionY + 28);
     }
 
     private void renderMenuDecorations(Graphics2D g) {
@@ -716,7 +741,7 @@ public class GameController {
 
         g.setFont(new Font("Monospaced", Font.BOLD, 13));
         g.setColor(new Color(90, 205, 235));
-        drawCenteredString(g, "PRESS ENTER IN THE TERMINAL TO GO BACK", y + 55);
+        drawCenteredString(g, "PRESS 0 HERE  OR  ENTER IN THE TERMINAL TO GO BACK", y + 55);
     }
 
     private void drawCenteredString(Graphics2D g, String text, int baseline) {
