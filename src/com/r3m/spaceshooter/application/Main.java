@@ -74,6 +74,7 @@ public class Main {
         System.out.println("Pilot your spaceship through the asteroid field.");
         System.out.println("Avoid incoming asteroids and survive for as long as possible.");
         System.out.println("Every collision costs one life. You start with three lives.");
+        System.out.println("Score: asteroid +10, enemy +25, power-up +20, damage -15.");
         System.out.println("=========================================================================");
     }
 

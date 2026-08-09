@@ -8,6 +8,10 @@ public class ScoreManager {
         score += points;
     }
 
+    public void subtractScore(int points) {
+        score = Math.max(0, score - Math.max(0, points));
+    }
+
     public int getScore() {
         return score;
     }

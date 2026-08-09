@@ -116,6 +116,7 @@ public class GameController {
     private static final double BULLET_SPEED = 700.0;
     private static final double SHOOT_COOLDOWN_SECONDS = 0.25;
     private static final int BULLET_SCORE_VALUE = 10;
+    private static final int DAMAGE_SCORE_PENALTY = 15;
 
     private final List<Bullet> bullets = new ArrayList<>();
     private double shootCooldownRemaining = 0.0;
@@ -124,6 +125,7 @@ public class GameController {
     private static final double POWERUP_DROP_CHANCE = 0.05;
     private static final double SPREAD_SHOT_DURATION_SECONDS = 8.0;
     private static final double SPREAD_ANGLE_DEGREES = 15.0;
+    private static final int POWER_UP_SCORE_VALUE = 20;
 
     private final List<PowerUp> powerUps = new ArrayList<>();
     private double spreadShotRemaining = 0.0;
@@ -547,6 +549,7 @@ public class GameController {
 
                 if (collisionManager.isColliding(getPlayerBounds(), powerUp.getBounds())) {
                     spreadShotRemaining = SPREAD_SHOT_DURATION_SECONDS;
+                    scoreManager.addScore(POWER_UP_SCORE_VALUE);
                     iterator.remove();
                 }
             }
@@ -698,7 +701,11 @@ public class GameController {
     }
 
     private void damagePlayer() {
+        int livesBeforeHit = player.getLives();
         player.takeHit();
+        if (player.getLives() < livesBeforeHit) {
+            scoreManager.subtractScore(DAMAGE_SCORE_PENALTY);
+        }
     }
 
     // What is graphics g? a class that has many functions to draw objects on screen
@@ -860,7 +867,8 @@ public class GameController {
             renderInformationPage(g, "INSTRUCTIONS", new String[] {
                 "Pilot your spaceship through the asteroid field.",
                 "Avoid enemies and incoming asteroids.",
-                "Survive for as long as possible and earn points."
+                "Destroy asteroid: +10   Destroy enemy: +25",
+                "Collect power-up: +20   Take damage: -15"
             });
             return;
         }
