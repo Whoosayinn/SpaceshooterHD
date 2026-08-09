@@ -39,4 +39,4 @@ public class AssetManager {
 
 // shooting mechanism of enemy, always check for y axis, if player flew on enemy
 // y-axis enemy shoots, otherwise give enemy 1-4 out of 10 chance to shoot randomly
-// always check for x axis aswell, if it passes 0 or - 10 remove the space ship
+// always check for x axis aswell, if it passes 0 or - 10 remove the space ship 
