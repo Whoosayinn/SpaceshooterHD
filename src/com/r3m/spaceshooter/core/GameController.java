@@ -49,11 +49,14 @@ public class GameController {
         MENU,
         INSTRUCTIONS,
         CONTROLS,
+        GAME_OVER,
         PLAYING
     }
 
     private volatile GameState gameState = GameState.MENU;
     private volatile double menuAnimationTime;
+    private volatile double gameOverFade;
+    private static final double GAME_OVER_FADE_SECONDS = 1.6;
 
     // --- SCREEN BOUNDARIES ---
 
@@ -204,6 +207,16 @@ public class GameController {
 
         updateStars(deltaTime);
 
+        if (gameState == GameState.GAME_OVER) {
+            menuAnimationTime += deltaTime;
+            gameOverFade = Math.min(
+                1.0,
+                gameOverFade + deltaTime / GAME_OVER_FADE_SECONDS
+            );
+            handleWindowMenuInput();
+            return;
+        }
+
         if (gameState != GameState.PLAYING) {
             menuAnimationTime += deltaTime;
             handleWindowMenuInput();
@@ -225,6 +238,11 @@ public class GameController {
         updateEnemyBullets(deltaTime);
         checkBulletEnemyCollisions();
         checkEnemyBulletPlayerCollisions();
+
+        if (!player.isAlive()) {
+            gameOverFade = 0;
+            gameState = GameState.GAME_OVER;
+        }
     }
 
     public void setViewportSize(int width, int height) {
@@ -270,6 +288,7 @@ public class GameController {
     }
 
     public void beginGameplay() {
+        player.reset(200, panelHeight / 2.0 - PLAYER_HEIGHT / 2.0);
         scoreManager.reset();
         asteroidSpawnTimer = 0;
         enemySpawnTimer = 0;
@@ -283,6 +302,7 @@ public class GameController {
         synchronized (enemies) { enemies.clear(); }
         synchronized (powerUps) { powerUps.clear(); }
 
+        gameOverFade = 0;
         gameState = GameState.PLAYING;
     }
 
@@ -301,6 +321,15 @@ public class GameController {
     private void handleWindowMenuInput() {
         int choice = inputManager.consumeMenuChoice();
         if (choice == InputManager.NO_MENU_CHOICE) {
+            return;
+        }
+
+        if (gameState == GameState.GAME_OVER) {
+            switch (choice) {
+                case 1 -> showMainMenu();
+                case 2 -> beginGameplay();
+                default -> { }
+            }
             return;
         }
 
@@ -694,7 +723,9 @@ public class GameController {
             }
         }
 
-        if (gameState != GameState.PLAYING) {
+        if (gameState == GameState.MENU
+            || gameState == GameState.INSTRUCTIONS
+            || gameState == GameState.CONTROLS) {
             renderMenuScreen(g);
             return;
         }
@@ -754,10 +785,62 @@ public class GameController {
             g.drawString("Spread Shot: " + String.format("%.1f", spreadShotRemaining) + "s", 10, 56);
         }
 
-        if (!player.isAlive()) {
-            g.setColor(Color.WHITE);
-            g.drawString("GAME OVER", panelWidth / 2 - 35, panelHeight / 2);
+        if (gameState == GameState.GAME_OVER) {
+            renderGameOverScreen(g);
         }
+    }
+
+    private void renderGameOverScreen(Graphics2D g) {
+        Graphics2D overlay = (Graphics2D) g.create();
+        float darkness = (float) (0.82 * gameOverFade);
+        overlay.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, darkness));
+        overlay.setColor(new Color(0, 2, 12));
+        overlay.fillRect(0, 0, panelWidth, panelHeight);
+        overlay.dispose();
+
+        if (gameOverFade < 0.28) {
+            return;
+        }
+
+        float contentAlpha = (float) Math.min(1.0, (gameOverFade - 0.28) / 0.45);
+        Graphics2D content = (Graphics2D) g.create();
+        content.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, contentAlpha));
+
+        int centerX = panelWidth / 2;
+        int titleY = panelHeight / 2 - 95;
+
+        content.setFont(new Font("Monospaced", Font.BOLD, 54));
+        String title = "GAME OVER";
+        int titleX = centerX - content.getFontMetrics().stringWidth(title) / 2;
+        content.setColor(new Color(255, 55, 85, 65));
+        content.drawString(title, titleX - 3, titleY);
+        content.drawString(title, titleX + 3, titleY);
+        content.setColor(new Color(255, 225, 230));
+        content.drawString(title, titleX, titleY);
+
+        int dividerY = titleY + 28;
+        content.setColor(new Color(80, 205, 235, 150));
+        content.drawLine(centerX - 190, dividerY, centerX - 24, dividerY);
+        content.drawLine(centerX + 24, dividerY, centerX + 190, dividerY);
+        int[] diamondX = {centerX, centerX + 6, centerX, centerX - 6};
+        int[] diamondY = {dividerY - 6, dividerY, dividerY + 6, dividerY};
+        content.fillPolygon(diamondX, diamondY, 4);
+
+        content.setFont(new Font("Monospaced", Font.BOLD, 17));
+        content.setColor(new Color(130, 220, 245));
+        drawCenteredString(content, "FINAL SCORE  //  " + scoreManager.getScore(), dividerY + 42);
+
+        content.setFont(new Font("Monospaced", Font.BOLD, 21));
+        content.setColor(new Color(235, 248, 255));
+        drawCenteredString(content, "[1]  BACK TO MAIN MENU", dividerY + 95);
+        drawCenteredString(content, "[2]  REPLAY", dividerY + 137);
+
+        int pulse = 175 + (int) (Math.sin(menuAnimationTime * 3.0) * 45);
+        content.setFont(new Font("Monospaced", Font.BOLD, 13));
+        content.setColor(new Color(70, pulse, 240));
+        drawCenteredString(content, "PRESS 1 OR 2", dividerY + 184);
+
+        content.dispose();
     }
 
     private void renderSpaceBackground(Graphics2D g) {
@@ -834,6 +917,8 @@ public class GameController {
     }
 
     private void renderMenuDecorations(Graphics2D g) {
+        renderShootingStars(g);
+
         int margin = 28;
         int cornerLength = 80;
         g.setColor(new Color(55, 185, 220, 90));
@@ -849,13 +934,42 @@ public class GameController {
         if (asteroidImage == null) return;
 
         Graphics2D decoration = (Graphics2D) g.create();
-        decoration.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.22f));
+        decoration.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.42f));
         int size = 88;
         int x = 55;
         int y = panelHeight / 2 - size / 2;
         decoration.rotate(menuAnimationTime * 0.14, x + size / 2.0, y + size / 2.0);
         decoration.drawImage(asteroidImage, x, y, size, size, null);
         decoration.dispose();
+
+        Graphics2D rightDecoration = (Graphics2D) g.create();
+        rightDecoration.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.42f));
+        int rightX = panelWidth - 55 - size;
+        int rightY = panelHeight / 2 - size / 2;
+        rightDecoration.rotate(
+            -menuAnimationTime * 0.16,
+            rightX + size / 2.0,
+            rightY + size / 2.0
+        );
+        rightDecoration.drawImage(asteroidImage, rightX, rightY, size, size, null);
+        rightDecoration.dispose();
+    }
+
+    private void renderShootingStars(Graphics2D g) {
+        int travelWidth = panelWidth + 260;
+        for (int i = 0; i < 3; i++) {
+            double travel = menuAnimationTime * (135 + i * 35) + i * panelWidth * 0.38;
+            int x = (int) (travel % travelWidth) - 130;
+            int y = 65 + i * Math.max(80, panelHeight / 5);
+            int tailLength = 48 + i * 15;
+
+            g.setColor(new Color(55, 190, 245, 35));
+            g.drawLine(x - tailLength - 22, y + 11, x, y);
+            g.setColor(new Color(115, 230, 255, 115));
+            g.drawLine(x - tailLength, y + 8, x, y);
+            g.setColor(new Color(235, 255, 255, 210));
+            g.fillRect(x - 1, y - 1, 3, 3);
+        }
     }
 
     private void renderAnimatedMenuShip(Graphics2D g, int y) {
@@ -864,11 +978,24 @@ public class GameController {
         int drift = (int) (Math.sin(menuAnimationTime * 1.4) * 24);
         int x = (panelWidth - width) / 2 + drift;
         int shipY = y + (int) (Math.sin(menuAnimationTime * 2.2) * 5);
+        int engineY = shipY + height / 2;
+        int trailLength = 34 + (int) ((Math.sin(menuAnimationTime * 7.0) + 1.0) * 8);
 
-        g.setColor(new Color(20, 190, 255, 45));
-        g.fillOval(x - 14, shipY - 7, width + 28, height + 14);
-        g.setColor(new Color(70, 220, 255, 145));
-        g.drawLine(x - 38, shipY + height / 2, x - 5, shipY + height / 2);
+        // Layered engine trails replace the old circular glow.
+        g.setColor(new Color(40, 150, 255, 55));
+        g.drawLine(x - trailLength - 24, engineY, x - 5, engineY);
+        g.setColor(new Color(70, 220, 255, 155));
+        g.drawLine(x - trailLength, engineY, x - 5, engineY);
+        g.setColor(new Color(175, 245, 255, 120));
+        g.drawLine(x - trailLength / 2, engineY - 4, x - 5, engineY - 4);
+        g.drawLine(x - trailLength / 2, engineY + 4, x - 5, engineY + 4);
+
+        int chevronPulse = 120 + (int) ((Math.sin(menuAnimationTime * 3.0) + 1.0) * 45);
+        g.setFont(new Font("Monospaced", Font.BOLD, 18));
+        g.setColor(new Color(60, chevronPulse, 235, 150));
+        g.drawString("<<", x - 76, engineY + 6);
+        g.drawString(">>", x + width + 42, engineY + 6);
+
         player.renderAt(g, x, shipY, width, height);
     }
 

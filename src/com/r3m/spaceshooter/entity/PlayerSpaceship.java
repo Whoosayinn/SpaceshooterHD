@@ -208,6 +208,17 @@ public class PlayerSpaceship extends Spaceship {
         invulnerabilityRemaining = INVULNERABILITY_SECONDS;
     }
 
+    /** Restores the player to a fresh state for a new or replayed game. */
+    public void reset(double startX, double startY) {
+        x = startX;
+        y = startY;
+        velocityX = 0;
+        velocityY = 0;
+        bankAngle = 0;
+        lives = STARTING_LIVES;
+        invulnerabilityRemaining = 0;
+    }
+
     public int getLives() { return lives; }
     public boolean isAlive() { return lives > 0; }
 }
