@@ -6,12 +6,13 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class AssetManager {
+/** * Manages the loading and caching of image assets used by the game. * * <p>The {@code AssetManager} follows the Singleton pattern, ensuring that * only one instance of the manager is used throughout the application. * Loaded images are stored in an internal cache so that an image does not * need to be loaded from the resource files multiple times.</p> * * <p>Images are loaded from the application's classpath using the resource * path supplied to {@link #loadImage(String)}.</p> * * @author R3M * @version 1.0 */public class AssetManager {
     private static AssetManager instance;
     private final Map<String, BufferedImage> images = new HashMap<>();
 
     public AssetManager() {}
 
+    /** * Creates a new {@code AssetManager}. * * <p>This constructor is public, although the class is intended to be * accessed through the {@link #getInstance()} method.</p> *//** * Creates a new {@code AssetManager}. * * <p>This constructor is public, although the class is intended to be * accessed through the {@link #getInstance()} method.</p> */
     public static AssetManager getInstance() {
         if (instance == null) {
             instance = new AssetManager();
@@ -19,6 +20,7 @@ public class AssetManager {
         return instance;
     }
 
+    /** * Loads an image from the specified resource path. * * <p>If the image has already been loaded, the cached image is returned * instead of loading it again. This reduces unnecessary resource access * and improves performance when the same image is requested multiple * times.</p> * * <p>If the image cannot be loaded because an I/O error occurs, an error * message is printed to the standard error stream and {@code null} is * returned.</p> * * @param path the classpath resource path of the image to load * @return the loaded {@link BufferedImage}, or {@code null} if the image * could not be loaded */
     public BufferedImage loadImage(String path) {
         if (images.containsKey(path)) return images.get(path);
         try {

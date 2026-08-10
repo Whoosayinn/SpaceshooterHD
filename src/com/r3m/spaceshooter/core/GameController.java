@@ -45,6 +45,7 @@ public class GameController {
 	 * the game loop, or keyboard events directly.
 	 */
 
+	// --- GAME STATE --- //
     private enum GameState {
         MENU,
         INSTRUCTIONS,
@@ -81,12 +82,14 @@ public class GameController {
     // loads and caches image assets from disk
     private final AssetManager assetManager;
     private final ScoreManager scoreManager;
+    
+    // --- RENDERING --- //
+    private final MenuRenderer menuRenderer;
 
     // --- PLAYER ---
     private static final int PLAYER_WIDTH = 64;
     private static final int PLAYER_HEIGHT = 56;
     private final PlayerSpaceship player;
-
     private final SpriteSheet playerSpriteSheet;
     
     // --- ASTEROID STATE ---
@@ -168,6 +171,7 @@ public class GameController {
         this.assetManager = AssetManager.getInstance();
         this.scoreManager = new ScoreManager();
 
+     // load player sprite sheet
         BufferedImage sheetImage = assetManager.loadImage("/assets/player_sprite.png");
         if (sheetImage != null) {
             // slice the 25-frame sheet into a 5x5 grid
@@ -193,20 +197,24 @@ public class GameController {
         this.asteroidImage = assetManager.loadImage("/assets/asteroid.png");
         this.gruntImage = assetManager.loadImage("/assets/enemy_grunt.png");
         this.eliteImage = assetManager.loadImage("/assets/enemy_elite.png");
+        
+        this.menuRenderer = new MenuRenderer(
+                player, asteroidImage, panelWidth, panelHeight
+            );
+        
         createInitialStars();
     }
 
+    /**
+     * Update — runs every frame (~60 times per second).
+     * This is the LOGIC step: move things, check rules, update state.
+     * No drawing happens here — only data changes.
+     *
+     * @param deltaTime seconds since the last frame (e.g. 0.01666 at 60fps)
+     *                  multiply all movement by this to keep speed
+     *                  consistent regardless of frame rate
+     */
     public void update(double deltaTime) {
-        /**
-         * Update — runs every frame (~60 times per second).
-         * This is the LOGIC step: move things, check rules, update state.
-         * No drawing happens here — only data changes.
-         *
-         * @param deltaTime seconds since the last frame (e.g. 0.01666 at 60fps)
-         *                  multiply all movement by this to keep speed
-         *                  consistent regardless of frame rate
-         */
-
         updateStars(deltaTime);
 
         if (gameState == GameState.GAME_OVER) {
@@ -235,7 +243,6 @@ public class GameController {
         updateAsteroids(deltaTime);
         checkBulletAsteroidCollisions();
         updatePowerUps(deltaTime);
-
         updateEnemies(deltaTime);
         updateEnemyBullets(deltaTime);
         checkBulletEnemyCollisions();
@@ -700,342 +707,68 @@ public class GameController {
         return player.getHitbox();
     }
 
+
+    /**
+     * Render — runs every frame right after update().
+     * Reads game state and draws it — never modifies state.
+     *
+     * @param g the Graphics2D paintbrush
+     */
+    public void render(Graphics2D g) {
+
+        // background and stars — always drawn regardless of state
+        menuRenderer.renderSpaceBackground(g);
+        synchronized (stars) {
+            for (Star star : stars) star.render(g);
+        }
+
+        // menu screens delegate entirely to MenuRenderer
+        switch (gameState) {
+            case MENU         -> { menuRenderer.renderMainMenu(g, menuAnimationTime);    return; }
+            case INSTRUCTIONS -> { menuRenderer.renderInstructionsPage(g);               return; }
+            case CONTROLS     -> { menuRenderer.renderControlsPage(g);                   return; }
+            default           -> { /* fall through to gameplay rendering */ }
+        }
+
+        // gameplay rendering
+        player.render(g);
+        synchronized (asteroids)    { for (Asteroid a      : asteroids)    a.render(g); }
+        synchronized (enemies)      { for (EnemySpaceship e: enemies)      e.render(g); }
+        synchronized (bullets)      { for (Bullet b        : bullets)      b.render(g); }
+        synchronized (enemyBullets) { for (Bullet b        : enemyBullets) b.render(g); }
+        synchronized (explosions)   { for (Explosion e     : explosions)   e.render(g); }
+        synchronized (powerUps)     { for (PowerUp p       : powerUps)     p.render(g); }
+
+        // HUD
+        g.setColor(Color.WHITE);
+        g.drawString("Score: " + scoreManager.getScore(), 10, 20);
+        g.drawString("Lives: " + player.getLives(),       10, 38);
+
+        if (spreadShotRemaining > 0.0) {
+            g.setColor(new Color(80, 220, 255));
+            g.drawString(
+                "Spread Shot: " + String.format("%.1f", spreadShotRemaining) + "s",
+                10, 56
+            );
+        }
+
+        // game over overlay delegates to MenuRenderer
+        if (gameState == GameState.GAME_OVER) {
+            menuRenderer.renderGameOverScreen(
+                g, gameOverFade, menuAnimationTime, scoreManager.getScore()
+            );
+        }
+    }
+
+    // FIX: removed getPlayerBounds() — call player.getHitbox() directly
+    // it was a single-line wrapper with no added value
+
     private void damagePlayer() {
-        int livesBeforeHit = player.getLives();
+        int livesBefore = player.getLives();
         player.takeHit();
-        if (player.getLives() < livesBeforeHit) {
+        if (player.getLives() < livesBefore) {
             scoreManager.subtractScore(DAMAGE_SCORE_PENALTY);
         }
     }
-
-    // What is graphics g? a class that has many functions to draw objects on screen
-    			       //^^^^^^^^^
-    public void render(Graphics2D g) {
-        /**
-         * Render — runs every frame right after update().
-         * Receives the Graphics2D object from GamePanel's paintComponent()
-         * and draws the current game state to screen.
-         *
-         * This method should NEVER modify game state — only read and draw.
-         * All logic belongs in update(), all drawing belongs here.
-         *
-         * @param g the Graphics2D paintbrush — use it to draw shapes, images, text
-         */
-
-        renderSpaceBackground(g);
-
-        synchronized (stars) {
-            for (Star star : stars) {
-                star.render(g);
-            }
-        }
-
-        if (gameState == GameState.MENU
-            || gameState == GameState.INSTRUCTIONS
-            || gameState == GameState.CONTROLS) {
-            renderMenuScreen(g);
-            return;
-        }
-
-        // player handles its own rendering (including blinking while invulnerable)
-        player.render(g);
-
-        synchronized (asteroids) {
-            for (Asteroid asteroid : asteroids) {
-                asteroid.render(g);
-            }
-        }
-
-        synchronized (enemies) {
-            for (EnemySpaceship enemy : enemies) {
-                enemy.render(g);
-            }
-        }
-
-        synchronized (bullets) {
-            for (Bullet bullet : bullets) {
-                bullet.render(g);
-            }
-        }
-
-        synchronized (enemyBullets) {
-            for (Bullet bullet : enemyBullets) {
-                bullet.render(g);
-            }
-        }
-
-        synchronized (explosions) {
-            for (Explosion explosion : explosions) {
-                explosion.render(g);
-            }
-        }
-
-        synchronized (powerUps) {
-            for (PowerUp powerUp : powerUps) {
-                powerUp.render(g);
-            }
-        }
-
-        // switch color to white for the score text
-        g.setColor(Color.WHITE);
-
-        // draw the score string at position (10, 20) — top left corner
-        // 10px from left edge, 20px from top edge
-        // scoreManager.getScore() is called fresh every frame
-        // so as soon as score changes, it shows up immediately next render
-        // string concatenation: "Score: " + 0 = "Score: 0"
-        g.drawString("Score: " + scoreManager.getScore(), 10, 20);
-        g.drawString("Lives: " + player.getLives(), 10, 38);
-
-        if (spreadShotRemaining > 0.0) {
-            g.setColor(new java.awt.Color(80, 220, 255));
-            g.drawString("Spread Shot: " + String.format("%.1f", spreadShotRemaining) + "s", 10, 56);
-        }
-
-        if (gameState == GameState.GAME_OVER) {
-            renderGameOverScreen(g);
-        }
-    }
-
-    private void renderGameOverScreen(Graphics2D g) {
-        Graphics2D overlay = (Graphics2D) g.create();
-        float darkness = (float) (0.82 * gameOverFade);
-        overlay.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, darkness));
-        overlay.setColor(new Color(0, 2, 12));
-        overlay.fillRect(0, 0, panelWidth, panelHeight);
-        overlay.dispose();
-
-        if (gameOverFade < 0.28) {
-            return;
-        }
-
-        float contentAlpha = (float) Math.min(1.0, (gameOverFade - 0.28) / 0.45);
-        Graphics2D content = (Graphics2D) g.create();
-        content.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, contentAlpha));
-
-        int centerX = panelWidth / 2;
-        int titleY = panelHeight / 2 - 95;
-
-        content.setFont(new Font("Monospaced", Font.BOLD, 54));
-        String title = "GAME OVER";
-        int titleX = centerX - content.getFontMetrics().stringWidth(title) / 2;
-        content.setColor(new Color(255, 55, 85, 65));
-        content.drawString(title, titleX - 3, titleY);
-        content.drawString(title, titleX + 3, titleY);
-        content.setColor(new Color(255, 225, 230));
-        content.drawString(title, titleX, titleY);
-
-        int dividerY = titleY + 28;
-        content.setColor(new Color(80, 205, 235, 150));
-        content.drawLine(centerX - 190, dividerY, centerX - 24, dividerY);
-        content.drawLine(centerX + 24, dividerY, centerX + 190, dividerY);
-        int[] diamondX = {centerX, centerX + 6, centerX, centerX - 6};
-        int[] diamondY = {dividerY - 6, dividerY, dividerY + 6, dividerY};
-        content.fillPolygon(diamondX, diamondY, 4);
-
-        content.setFont(new Font("Monospaced", Font.BOLD, 17));
-        content.setColor(new Color(130, 220, 245));
-        drawCenteredString(content, "FINAL SCORE  //  " + scoreManager.getScore(), dividerY + 42);
-
-        content.setFont(new Font("Monospaced", Font.BOLD, 21));
-        content.setColor(new Color(235, 248, 255));
-        drawCenteredString(content, "[1]  BACK TO MAIN MENU", dividerY + 95);
-        drawCenteredString(content, "[2]  REPLAY", dividerY + 137);
-
-        int pulse = 175 + (int) (Math.sin(menuAnimationTime * 3.0) * 45);
-        content.setFont(new Font("Monospaced", Font.BOLD, 13));
-        content.setColor(new Color(70, pulse, 240));
-        drawCenteredString(content, "PRESS 1 OR 2", dividerY + 184);
-
-        content.dispose();
-    }
-
-    private void renderSpaceBackground(Graphics2D g) {
-        Paint oldPaint = g.getPaint();
-        g.setPaint(new GradientPaint(
-            0, 0, new Color(5, 16, 42),
-            0, panelHeight, new Color(0, 2, 12)
-        ));
-        g.fillRect(0, 0, panelWidth, panelHeight);
-        g.setPaint(oldPaint);
-    }
-
-    private void renderMenuScreen(Graphics2D g) {
-        renderMenuDecorations(g);
-
-        if (gameState == GameState.INSTRUCTIONS) {
-            renderInformationPage(g, "INSTRUCTIONS", new String[] {
-                "Pilot your spaceship through the asteroid field.",
-                "Avoid enemies and incoming asteroids.",
-                "Destroy asteroid: +10   Destroy enemy: +25",
-                "Collect power-up: +20   Take damage: -15"
-            });
-            return;
-        }
-
-        if (gameState == GameState.CONTROLS) {
-            renderInformationPage(g, "VIEW CONTROLS", new String[] {
-                "W  -  MOVE UP",
-                "A  -  MOVE LEFT",
-                "S  -  MOVE DOWN",
-                "D  -  MOVE RIGHT",
-                "SPACE  -  SHOOT",
-                "ESC  -  EXIT GAME"
-            });
-            return;
-        }
-
-        String[] asciiTitle = {
-            " ____  ____   _    ____ _____     ____  _   _  ___   ___ _____ _____ ____    _   _ ____  ",
-            "/ ___||  _ \\ / \\  / ___| ____|   / ___|| | | |/ _ \\ / _ \\_   _| ____|  _ \\  | | | |  _ \\ ",
-            "\\___ \\| |_) / _ \\| |   |  _|     \\___ \\| |_| | | | | | | || | |  _| | |_) | | |_| | | | |",
-            " ___) |  __/ ___ \\ |___| |___     ___) |  _  | |_| | |_| || | | |___|  _ <  |  _  | |_| |",
-            "|____/|_| /_/   \\_\\____|_____|   |____/|_| |_|\\___/ \\___/ |_| |_____|_| \\_\\ |_| |_|____/ "
-        };
-
-        int asciiSize = Math.max(8, Math.min(16, panelWidth / 70));
-        g.setFont(new Font("Monospaced", Font.BOLD, asciiSize));
-        int y = 92;
-        for (String line : asciiTitle) {
-            drawCenteredGlowString(g, line, y);
-            y += asciiSize + 4;
-        }
-
-        renderAnimatedMenuShip(g, y + 10);
-
-        String[] options = {
-            "[1]  START GAME",
-            "[2]  INSTRUCTIONS",
-            "[3]  VIEW CONTROLS",
-            "[4]  EXIT"
-        };
-
-        g.setFont(new Font("Monospaced", Font.BOLD, 20));
-        int optionY = Math.max(y + 105, panelHeight / 2 + 30);
-        for (String option : options) {
-            g.setColor(new Color(230, 248, 255));
-            drawCenteredString(g, option, optionY);
-            optionY += 40;
-        }
-
-        int pulse = 175 + (int) (Math.sin(menuAnimationTime * 3.0) * 45);
-        g.setFont(new Font("Monospaced", Font.BOLD, 13));
-        g.setColor(new Color(75, pulse, 240));
-        drawCenteredString(g, "PRESS 1 - 4 HERE  OR  TYPE IT IN THE TERMINAL", optionY + 28);
-    }
-
-    private void renderMenuDecorations(Graphics2D g) {
-        renderShootingStars(g);
-
-        int margin = 28;
-        int cornerLength = 80;
-        g.setColor(new Color(55, 185, 220, 90));
-        g.drawLine(margin, margin, margin + cornerLength, margin);
-        g.drawLine(margin, margin, margin, margin + 42);
-        g.drawLine(panelWidth - margin, margin, panelWidth - margin - cornerLength, margin);
-        g.drawLine(panelWidth - margin, margin, panelWidth - margin, margin + 42);
-        g.drawLine(margin, panelHeight - margin, margin + cornerLength, panelHeight - margin);
-        g.drawLine(margin, panelHeight - margin, margin, panelHeight - margin - 42);
-        g.drawLine(panelWidth - margin, panelHeight - margin, panelWidth - margin - cornerLength, panelHeight - margin);
-        g.drawLine(panelWidth - margin, panelHeight - margin, panelWidth - margin, panelHeight - margin - 42);
-
-        if (asteroidImage == null) return;
-
-        Graphics2D decoration = (Graphics2D) g.create();
-        decoration.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.42f));
-        int size = 88;
-        int x = 55;
-        int y = panelHeight / 2 - size / 2;
-        decoration.rotate(menuAnimationTime * 0.14, x + size / 2.0, y + size / 2.0);
-        decoration.drawImage(asteroidImage, x, y, size, size, null);
-        decoration.dispose();
-
-        Graphics2D rightDecoration = (Graphics2D) g.create();
-        rightDecoration.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.42f));
-        int rightX = panelWidth - 55 - size;
-        int rightY = panelHeight / 2 - size / 2;
-        rightDecoration.rotate(
-            -menuAnimationTime * 0.16,
-            rightX + size / 2.0,
-            rightY + size / 2.0
-        );
-        rightDecoration.drawImage(asteroidImage, rightX, rightY, size, size, null);
-        rightDecoration.dispose();
-    }
-
-    private void renderShootingStars(Graphics2D g) {
-        int travelWidth = panelWidth + 260;
-        for (int i = 0; i < 3; i++) {
-            double travel = menuAnimationTime * (135 + i * 35) + i * panelWidth * 0.38;
-            int x = (int) (travel % travelWidth) - 130;
-            int y = 65 + i * Math.max(80, panelHeight / 5);
-            int tailLength = 48 + i * 15;
-
-            g.setColor(new Color(55, 190, 245, 35));
-            g.drawLine(x - tailLength - 22, y + 11, x, y);
-            g.setColor(new Color(115, 230, 255, 115));
-            g.drawLine(x - tailLength, y + 8, x, y);
-            g.setColor(new Color(235, 255, 255, 210));
-            g.fillRect(x - 1, y - 1, 3, 3);
-        }
-    }
-
-    private void renderAnimatedMenuShip(Graphics2D g, int y) {
-        int width = 82;
-        int height = width * PLAYER_HEIGHT / PLAYER_WIDTH;
-        int drift = (int) (Math.sin(menuAnimationTime * 1.4) * 24);
-        int x = (panelWidth - width) / 2 + drift;
-        int shipY = y + (int) (Math.sin(menuAnimationTime * 2.2) * 5);
-        int engineY = shipY + height / 2;
-        int trailLength = 34 + (int) ((Math.sin(menuAnimationTime * 7.0) + 1.0) * 8);
-
-        // Layered engine trails replace the old circular glow.
-        g.setColor(new Color(40, 150, 255, 55));
-        g.drawLine(x - trailLength - 24, engineY, x - 5, engineY);
-        g.setColor(new Color(70, 220, 255, 155));
-        g.drawLine(x - trailLength, engineY, x - 5, engineY);
-        g.setColor(new Color(175, 245, 255, 120));
-        g.drawLine(x - trailLength / 2, engineY - 4, x - 5, engineY - 4);
-        g.drawLine(x - trailLength / 2, engineY + 4, x - 5, engineY + 4);
-
-        int chevronPulse = 120 + (int) ((Math.sin(menuAnimationTime * 3.0) + 1.0) * 45);
-        g.setFont(new Font("Monospaced", Font.BOLD, 18));
-        g.setColor(new Color(60, chevronPulse, 235, 150));
-        g.drawString("<<", x - 76, engineY + 6);
-        g.drawString(">>", x + width + 42, engineY + 6);
-
-        player.renderAt(g, x, shipY, width, height);
-    }
-
-    private void renderInformationPage(Graphics2D g, String heading, String[] lines) {
-        g.setFont(new Font("Monospaced", Font.BOLD, 34));
-        g.setColor(new Color(115, 225, 255));
-        drawCenteredString(g, "+=== " + heading + " ===+", panelHeight / 3);
-
-        g.setFont(new Font("Monospaced", Font.PLAIN, 17));
-        int y = panelHeight / 3 + 70;
-        for (String line : lines) {
-            g.setColor(new Color(225, 245, 255));
-            drawCenteredString(g, line, y);
-            y += 34;
-        }
-
-        g.setFont(new Font("Monospaced", Font.BOLD, 13));
-        g.setColor(new Color(90, 205, 235));
-        drawCenteredString(g, "PRESS 0 HERE  OR  ENTER IN THE TERMINAL TO GO BACK", y + 45);
-    }
-
-    private void drawCenteredString(Graphics2D g, String text, int baseline) {
-        int x = (panelWidth - g.getFontMetrics().stringWidth(text)) / 2;
-        g.drawString(text, x, baseline);
-    }
-
-    private void drawCenteredGlowString(Graphics2D g, String text, int baseline) {
-        int x = (panelWidth - g.getFontMetrics().stringWidth(text)) / 2;
-        g.setColor(new Color(20, 175, 255, 42));
-        g.drawString(text, x - 2, baseline);
-        g.drawString(text, x + 2, baseline);
-        g.setColor(new Color(115, 225, 255));
-        g.drawString(text, x, baseline);
-    }
 }
+
