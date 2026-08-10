@@ -31,20 +31,23 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+/**
+ * Controls and coordinates the overall gameplay of the Space Shooter game.
+ *
+ * The GameController acts as the central coordinator between the different
+ * parts of the game. It receives input from the player, updates game entities,
+ * coordinates gameplay systems, manages game-state changes, and determines
+ * when major events such as starting a new game or reaching game over occur.
+ *
+ * Rather than performing every task itself, the controller delegates
+ * specialised responsibilities to other classes such as EntityManager,
+ * GameStateManager, SpawnManager, WeaponSystem, CollisionSystem, and
+ * EntityUpdateSystem.
+ *
+ * This keeps the controller focused primarily on coordinating the order in
+ * which the different parts of the game are updated.
+ */
 public class GameController {
-	/**
-	 * GameController is the brain of the game.
-	 * It owns all game logic — movement, collision, scoring —
-	 * and delegates to specialized manager classes for each responsibility.
-	 *
-	 * It receives deltaTime from GamePanel every frame and uses it
-	 * to make all movement frame-rate independent.
-	 *
-	 * This class follows the Single Responsibility principle:
-	 * it orchestrates game logic but does NOT manage the window,
-	 * the game loop, or keyboard events directly.
-	 */
-
 	// --- GAME STATE --- //
     private enum GameState {
         MENU,
@@ -155,10 +158,6 @@ public class GameController {
      * @param panelWidth   the width of the game surface in pixels
      * @param panelHeight  the height of the game surface in pixels
      */
-
-    // store the shared InputManager — this is the SAME object
-    // that GamePanel attached to addKeyListener()
-    // so key presses flow: keyboard → InputManager → here → player movement
     public GameController(InputManager inputManager, int panelWidth, int panelHeight) {
 
         this.inputManager = inputManager;
@@ -253,7 +252,19 @@ public class GameController {
             gameState = GameState.GAME_OVER;
         }
     }
-
+    
+    /**
+     * Updates the dimensions of the playable game area.
+     *
+     * The new width and height are stored by the controller and are also passed
+     * to the player so that its movement can remain restricted to the current
+     * game-panel boundaries.
+     *
+     * Invalid dimensions, such as zero or negative values, are ignored.
+     *
+     * @param width  the current width of the game panel in pixels
+     * @param height the current height of the game panel in pixels
+     */
     public void setViewportSize(int width, int height) {
         if (width <= 0 || height <= 0) {
             return;
@@ -295,7 +306,16 @@ public class GameController {
             }
         }
     }
-
+    /**
+     * Starts a new gameplay session.
+     *
+     * Resets the player to the starting position, clears the previous score and
+     * temporary game entities, resets spawning and weapon-related systems, and
+     * changes the current game state to PLAYING.
+     *
+     * This method is used both when the player starts the game from the main menu
+     * and when the player chooses to restart after a game-over.
+     */
     public void beginGameplay() {
         player.reset(200, panelHeight / 2.0 - PLAYER_HEIGHT / 2.0);
         scoreManager.reset();
@@ -314,15 +334,35 @@ public class GameController {
         gameOverFade = 0;
         gameState = GameState.PLAYING;
     }
-
+    
+    /**
+     * Changes the current game state to the main menu.
+     *
+     * The actual state transition is delegated to GameStateManager so that
+     * GameController does not directly manage the internal representation of
+     * game states.
+     */
     public void showMainMenu() {
         gameState = GameState.MENU;
     }
-
+    
+    /**
+     * Changes the current game state to the instructions screen.
+     *
+     * The transition is handled through GameStateManager, allowing the
+     * corresponding instructions interface to be displayed by the rendering
+     * system.
+     */
     public void showInstructions() {
         gameState = GameState.INSTRUCTIONS;
     }
 
+    /**
+    * Changes the current game state to the controls screen.
+    *
+    * This allows the player to view the game's keyboard controls while keeping
+    * state-transition responsibilities delegated to GameStateManager.
+    */
     public void showControls() {
         gameState = GameState.CONTROLS;
     }
