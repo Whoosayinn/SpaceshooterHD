@@ -13,12 +13,25 @@ import java.util.Random;
 public abstract class EnemySpaceship extends Spaceship {
     private final double speed;
     private final double shootCooldownSeconds;
+    /** Random source available to subclass shooting strategies. */
     protected final Random random;
 
     private double shootCooldownRemaining = 0.0;
     private boolean wantsToShoot = false;
     private double playerYReference;
 
+    /**
+     * Initializes shared enemy movement and firing state.
+     *
+     * @param image enemy sprite; may be {@code null}
+     * @param x initial horizontal position
+     * @param y initial vertical position
+     * @param width rendered width in pixels
+     * @param height rendered height in pixels
+     * @param speed leftward movement speed in pixels per second
+     * @param shootCooldownSeconds minimum delay between shots
+     * @param random random source for subclass AI
+     */
     protected EnemySpaceship(BufferedImage image, double x, double y, int width, int height,
                               double speed, double shootCooldownSeconds, Random random) {
         // image may be null — subclasses fall back to drawing a shape if so
@@ -28,7 +41,11 @@ public abstract class EnemySpaceship extends Spaceship {
         this.random = random;
     }
 
-    /** GameController calls this each frame before update() so the AI knows where the player is. */
+    /**
+     * Supplies the player's vertical center for the next AI update.
+     *
+     * @param playerCenterY player's vertical center coordinate
+     */
     public void setPlayerYReference(double playerCenterY) {
         this.playerYReference = playerCenterY;
     }
@@ -50,17 +67,26 @@ public abstract class EnemySpaceship extends Spaceship {
      * Each enemy type decides differently whether to fire this frame.
      * @param enemyCenterY this ship's current vertical center
      * @param playerCenterY the player's current vertical center
+     * @return {@code true} when the enemy should request a shot
      */
     protected abstract boolean decideToShoot(double enemyCenterY, double playerCenterY);
 
-    /** GameController checks this right after update() to know whether to spawn a bullet. */
+    /**
+     * Returns and clears the pending shoot request.
+     *
+     * @return {@code true} when the controller should spawn a bullet
+     */
     public boolean consumeShootRequest() {
         boolean result = wantsToShoot;
         wantsToShoot = false;
         return result;
     }
 
-    /** Per spec: remove once it passes the left edge (x < 0, with a small buffer). */
+    /**
+     * Tests whether the ship has passed the left removal boundary.
+     *
+     * @return {@code true} when {@code x < -10}
+     */
     public boolean isPastLeftEdge() {
         return x < -10;
     }

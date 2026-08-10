@@ -31,3 +31,14 @@ Add those lines to `~/.zshrc` to keep the setting between terminal sessions.
 ## Run
 
 Open `src/com/r3m/spaceshooter/application/Main.java` and select **Run Java**.
+
+## API documentation
+
+Generate the complete Javadoc site from every Java file under `src`:
+
+```powershell
+.\generate-javadoc.ps1
+```
+
+Open `doc/index.html` after the command completes. The script requires a JDK
+with `javadoc` available on `PATH` or through `JAVA_HOME`.

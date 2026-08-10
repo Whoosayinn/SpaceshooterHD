@@ -1,0 +1,269 @@
+<mxfile host="app.diagrams.net" agent="Codex" version="24.7.17" type="device">
+  <diagram id="architecture" name="1 - Architecture">
+    <mxGraphModel dx="3000" dy="2000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3000" pageHeight="2100" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="title" value="SpaceshooterHD - UML Architecture" style="text;html=1;align=center;verticalAlign=middle;fontSize=28;fontStyle=1;fontColor=#0B2A4A;" vertex="1" parent="1">
+          <mxGeometry x="850" y="20" width="1300" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="subtitle" value="Application, core loop, and system services (updated August 2026)" style="text;html=1;align=center;verticalAlign=middle;fontSize=14;fontColor=#52606D;" vertex="1" parent="1">
+          <mxGeometry x="850" y="70" width="1300" height="30" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="pkgApp" value="application" style="swimlane;html=1;rounded=1;startSize=34;horizontal=1;fontStyle=1;fontSize=16;fillColor=#EAF2F8;strokeColor=#5B8DB8;opacity=55;" vertex="1" parent="1">
+          <mxGeometry x="40" y="120" width="660" height="600" as="geometry"/>
+        </mxCell>
+        <mxCell id="pkgCore" value="core" style="swimlane;html=1;rounded=1;startSize=34;horizontal=1;fontStyle=1;fontSize=16;fillColor=#EEF7EE;strokeColor=#6AA56A;opacity=55;" vertex="1" parent="1">
+          <mxGeometry x="740" y="120" width="1180" height="940" as="geometry"/>
+        </mxCell>
+        <mxCell id="pkgSystem" value="system" style="swimlane;html=1;rounded=1;startSize=34;horizontal=1;fontStyle=1;fontSize=16;fillColor=#FFF5E6;strokeColor=#D79B45;opacity=55;" vertex="1" parent="1">
+          <mxGeometry x="1960" y="120" width="1000" height="1180" as="geometry"/>
+        </mxCell>
+        <mxCell id="pkgEntityRef" value="entity (cross-page references)" style="swimlane;html=1;rounded=1;startSize=34;horizontal=1;fontStyle=1;fontSize=16;fillColor=#F3ECFA;strokeColor=#9673A6;opacity=55;" vertex="1" parent="1">
+          <mxGeometry x="740" y="1100" width="1180" height="760" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="main" value="&lt;b&gt;Main&lt;/b&gt;&#xa;&lt;hr/&gt;+ main(args: String[]): void&#xa;- printMainMenu(): void&#xa;- printInstructions(): void&#xa;- printControls(): void&#xa;- waitForEnter(scanner: Scanner): void" style="swimlane;html=1;whiteSpace=wrap;rounded=0;startSize=30;align=left;verticalAlign=top;spacing=8;fontSize=13;fillColor=#FFFFFF;strokeColor=#2C5F8A;" vertex="1" parent="1">
+          <mxGeometry x="90" y="200" width="270" height="210" as="geometry"/>
+        </mxCell>
+        <mxCell id="gameFrame" value="&lt;b&gt;GameFrame&lt;/b&gt;&#xa;&lt;i&gt;extends JFrame&lt;/i&gt;&#xa;&lt;hr/&gt;- WINDOW_WIDTH: int {static, final}&#xa;- WINDOW_HEIGHT: int {static, final}&#xa;- gamePanel: GamePanel {final}&#xa;&lt;hr/&gt;+ GameFrame()&#xa;+ startGame(): void&#xa;+ beginGameplay(): void&#xa;+ showMainMenu(): void&#xa;+ showInstructions(): void&#xa;+ showControls(): void&#xa;+ closeGame(): void" style="swimlane;html=1;whiteSpace=wrap;rounded=0;startSize=30;align=left;verticalAlign=top;spacing=8;fontSize=13;fillColor=#FFFFFF;strokeColor=#2C5F8A;" vertex="1" parent="1">
+          <mxGeometry x="390" y="200" width="270" height="360" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="gamePanel" value="&lt;b&gt;GamePanel&lt;/b&gt;&#xa;&lt;i&gt;extends JPanel; implements Runnable&lt;/i&gt;&#xa;&lt;hr/&gt;- gameController: GameController {final}&#xa;- inputManager: InputManager {final}&#xa;- gameClock: GameClock {final}&#xa;- gameThread: Thread&#xa;- running: boolean&#xa;&lt;hr/&gt;+ GamePanel()&#xa;+ GamePanel(width: int, height: int)&#xa;+ startGame(): void&#xa;+ stopGame(): void&#xa;+ beginGameplay(): void&#xa;+ showMainMenu(): void&#xa;+ showInstructions(): void&#xa;+ showControls(): void&#xa;+ run(): void&#xa;# paintComponent(g: Graphics): void" style="swimlane;html=1;whiteSpace=wrap;rounded=0;startSize=30;align=left;verticalAlign=top;spacing=8;fontSize=13;fillColor=#FFFFFF;strokeColor=#4F8A4F;" vertex="1" parent="1">
+          <mxGeometry x="790" y="200" width="320" height="440" as="geometry"/>
+        </mxCell>
+        <mxCell id="gameController" value="&lt;b&gt;GameController&lt;/b&gt;&#xa;&lt;hr/&gt;- gameState: GameState&#xa;- panelWidth, panelHeight: int&#xa;- inputManager: InputManager {final}&#xa;- collisionManager: CollisionManager {final}&#xa;- assetManager: AssetManager {final}&#xa;- scoreManager: ScoreManager {final}&#xa;- player: PlayerSpaceship {final}&#xa;- entity collections: List&lt;T&gt;&#xa;- random: Random {final}&#xa;&lt;hr/&gt;+ GameController(input, width, height)&#xa;+ update(deltaTime: double): void&#xa;+ setViewportSize(width, height): void&#xa;+ beginGameplay(): void&#xa;+ showMainMenu(): void&#xa;+ showInstructions(): void&#xa;+ showControls(): void&#xa;+ render(g: Graphics2D): void&#xa;- handleShooting(): void&#xa;- update/spawn/collision helpers(): void" style="swimlane;html=1;whiteSpace=wrap;rounded=0;startSize=30;align=left;verticalAlign=top;spacing=8;fontSize=13;fillColor=#FFFFFF;strokeColor=#4F8A4F;" vertex="1" parent="1">
+          <mxGeometry x="1140" y="200" width="410" height="510" as="geometry"/>
+        </mxCell>
+        <mxCell id="gameClock" value="&lt;b&gt;GameClock&lt;/b&gt;&#xa;&lt;hr/&gt;- nanosecondsPerFrame: long {final}&#xa;- lastFrameTime: long&#xa;- deltaTime: double&#xa;&lt;hr/&gt;+ GameClock(targetFPS: int)&#xa;+ reset(): void&#xa;+ isNextFrameReady(): boolean&#xa;+ waitForNextFrame(): double&#xa;+ getDeltaTime(): double" style="swimlane;html=1;whiteSpace=wrap;rounded=0;startSize=30;align=left;verticalAlign=top;spacing=8;fontSize=13;fillColor=#FFFFFF;strokeColor=#4F8A4F;" vertex="1" parent="1">
+          <mxGeometry x="1580" y="200" width="290" height="270" as="geometry"/>
+        </mxCell>
+        <mxCell id="gameState" value="&lt;b&gt;&amp;lt;&amp;lt;enumeration&amp;gt;&amp;gt; GameState&lt;/b&gt;&#xa;&lt;hr/&gt;MENU&#xa;INSTRUCTIONS&#xa;CONTROLS&#xa;GAME_OVER&#xa;PLAYING" style="swimlane;html=1;whiteSpace=wrap;rounded=0;startSize=30;align=left;verticalAlign=top;spacing=8;fontSize=13;fillColor=#F8FFF8;strokeColor=#4F8A4F;" vertex="1" parent="1">
+          <mxGeometry x="1580" y="520" width="260" height="220" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="inputManager" value="&lt;b&gt;InputManager&lt;/b&gt;&#xa;&lt;i&gt;implements KeyListener&lt;/i&gt;&#xa;&lt;hr/&gt;+ NO_MENU_CHOICE: int {static, final}&#xa;- key states: boolean&#xa;- pendingMenuChoice: int&#xa;&lt;hr/&gt;+ keyPressed(e: KeyEvent): void&#xa;+ keyReleased(e: KeyEvent): void&#xa;+ keyTyped(e: KeyEvent): void&#xa;+ consumeMenuChoice(): int&#xa;+ isW/A/S/D/SpacePressed(): boolean" style="swimlane;html=1;whiteSpace=wrap;rounded=0;startSize=30;align=left;verticalAlign=top;spacing=8;fontSize=13;fillColor=#FFFFFF;strokeColor=#C47E1B;" vertex="1" parent="1">
+          <mxGeometry x="2010" y="200" width="310" height="330" as="geometry"/>
+        </mxCell>
+        <mxCell id="collisionManager" value="&lt;b&gt;CollisionManager&lt;/b&gt;&#xa;&lt;hr/&gt;+ isColliding(a: Shape, b: Shape): boolean" style="swimlane;html=1;whiteSpace=wrap;rounded=0;startSize=30;align=left;verticalAlign=top;spacing=8;fontSize=13;fillColor=#FFFFFF;strokeColor=#C47E1B;" vertex="1" parent="1">
+          <mxGeometry x="2350" y="200" width="270" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="scoreManager" value="&lt;b&gt;ScoreManager&lt;/b&gt;&#xa;&lt;hr/&gt;- score: int&#xa;&lt;hr/&gt;+ addScore(points: int): void&#xa;+ subtractScore(points: int): void&#xa;+ getScore(): int&#xa;+ reset(): void" style="swimlane;html=1;whiteSpace=wrap;rounded=0;startSize=30;align=left;verticalAlign=top;spacing=8;fontSize=13;fillColor=#FFFFFF;strokeColor=#C47E1B;" vertex="1" parent="1">
+          <mxGeometry x="2660" y="200" width="250" height="210" as="geometry"/>
+        </mxCell>
+        <mxCell id="assetManager" value="&lt;b&gt;AssetManager&lt;/b&gt;&#xa;&lt;hr/&gt;- instance: AssetManager {static}&#xa;- images: Map&lt;String, BufferedImage&gt; {final}&#xa;&lt;hr/&gt;+ AssetManager()&#xa;+ getInstance(): AssetManager {static}&#xa;+ loadImage(path: String): BufferedImage" style="swimlane;html=1;whiteSpace=wrap;rounded=0;startSize=30;align=left;verticalAlign=top;spacing=8;fontSize=13;fillColor=#FFFFFF;strokeColor=#C47E1B;" vertex="1" parent="1">
+          <mxGeometry x="2010" y="590" width="310" height="250" as="geometry"/>
+        </mxCell>
+        <mxCell id="spriteSheet" value="&lt;b&gt;SpriteSheet&lt;/b&gt;&#xa;&lt;hr/&gt;- sheet: BufferedImage {final}&#xa;- spriteWidth, spriteHeight: int {final}&#xa;- columns, rows: int {final}&#xa;- frames: BufferedImage[] {final}&#xa;&lt;hr/&gt;+ SpriteSheet(sheet, columns, rows)&#xa;+ getFrame(index: int): BufferedImage&#xa;+ getTotalFrames(): int&#xa;+ getSpriteWidth/Height(): int" style="swimlane;html=1;whiteSpace=wrap;rounded=0;startSize=30;align=left;verticalAlign=top;spacing=8;fontSize=13;fillColor=#FFFFFF;strokeColor=#C47E1B;" vertex="1" parent="1">
+          <mxGeometry x="2350" y="590" width="300" height="300" as="geometry"/>
+        </mxCell>
+        <mxCell id="shipAnimator" value="&lt;b&gt;ShipAnimator&lt;/b&gt;&#xa;&lt;hr/&gt;- animationPosition: double&#xa;- currentFrameInZone: int&#xa;- frameTimer: double&#xa;&lt;hr/&gt;+ update(velocity, maxSpeed, deltaTime): void&#xa;+ getCurrentFrameIndex(): int" style="swimlane;html=1;whiteSpace=wrap;rounded=0;startSize=30;align=left;verticalAlign=top;spacing=8;fontSize=13;fillColor=#FFFFFF;strokeColor=#C47E1B;" vertex="1" parent="1">
+          <mxGeometry x="2690" y="590" width="260" height="220" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="playerRef" value="&lt;b&gt;PlayerSpaceship&lt;/b&gt;&#xa;&lt;i&gt;entity page&lt;/i&gt;" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#9673A6;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="800" y="1190" width="230" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="enemyRef" value="&lt;b&gt;EnemySpaceship&lt;/b&gt;&#xa;&lt;i&gt;0..* polymorphic enemies&lt;/i&gt;" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#9673A6;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="1190" width="250" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="asteroidRef" value="&lt;b&gt;Asteroid&lt;/b&gt;&#xa;0..*" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#9673A6;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="1190" width="180" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="bulletRef" value="&lt;b&gt;Bullet&lt;/b&gt;&#xa;0..* player/enemy" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#9673A6;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1610" y="1190" width="220" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="powerRef" value="&lt;b&gt;PowerUp&lt;/b&gt;&#xa;0..*" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#9673A6;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="800" y="1320" width="180" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="explosionRef" value="&lt;b&gt;Explosion&lt;/b&gt;&#xa;0..*" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#9673A6;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1030" y="1320" width="180" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="starRef" value="&lt;b&gt;Star&lt;/b&gt;&#xa;120" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#9673A6;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1260" y="1320" width="180" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="entityNote" value="Detailed attributes, operations, inheritance, and entity-side dependencies are on page 2." style="shape=note;whiteSpace=wrap;html=1;size=18;fillColor=#FFFDEB;strokeColor=#C9B458;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1500" y="1320" width="330" height="100" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="eMainFrame" value="creates / controls 1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#4A5568;fontSize=12;" edge="1" parent="1" source="main" target="gameFrame">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eFramePanel" value="1 composes 1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeColor=#1F4E79;fontSize=12;" edge="1" parent="1" source="gameFrame" target="gamePanel">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ePanelController" value="1 composes 1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeColor=#356B35;fontSize=12;" edge="1" parent="1" source="gamePanel" target="gameController">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ePanelClock" value="1 composes 1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeColor=#356B35;fontSize=12;" edge="1" parent="1" source="gamePanel" target="gameClock">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ePanelInput" value="1 composes 1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeColor=#356B35;fontSize=12;" edge="1" parent="1" source="gamePanel" target="inputManager">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eControllerInput" value="uses shared 1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamondThin;startFill=0;endArrow=none;dashed=1;strokeColor=#666666;fontSize=12;" edge="1" parent="1" source="gameController" target="inputManager">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eControllerCollision" value="1 composes 1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeColor=#666666;fontSize=12;" edge="1" parent="1" source="gameController" target="collisionManager">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eControllerScore" value="1 composes 1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeColor=#666666;fontSize=12;" edge="1" parent="1" source="gameController" target="scoreManager">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eControllerAsset" value="uses singleton 1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;dashed=1;strokeColor=#666666;fontSize=12;" edge="1" parent="1" source="gameController" target="assetManager">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eControllerSheet" value="creates 0..1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;dashed=1;strokeColor=#666666;fontSize=12;" edge="1" parent="1" source="gameController" target="spriteSheet">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eControllerState" value="contains" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeColor=#356B35;fontSize=12;" edge="1" parent="1" source="gameController" target="gameState">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eControllerPlayer" value="1 composes 1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeColor=#714C7D;fontSize=12;" edge="1" parent="1" source="gameController" target="playerRef">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eControllerEnemy" value="1 composes 0..*" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeColor=#714C7D;fontSize=12;" edge="1" parent="1" source="gameController" target="enemyRef">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eControllerAsteroid" value="0..*" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeColor=#714C7D;fontSize=12;" edge="1" parent="1" source="gameController" target="asteroidRef">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eControllerBullet" value="0..*" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeColor=#714C7D;fontSize=12;" edge="1" parent="1" source="gameController" target="bulletRef">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eControllerPower" value="0..*" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeColor=#714C7D;fontSize=12;" edge="1" parent="1" source="gameController" target="powerRef">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eControllerExplosion" value="0..*" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeColor=#714C7D;fontSize=12;" edge="1" parent="1" source="gameController" target="explosionRef">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eControllerStar" value="120" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeColor=#714C7D;fontSize=12;" edge="1" parent="1" source="gameController" target="starRef">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="legend" value="&lt;b&gt;UML legend&lt;/b&gt;&#xa;Filled diamond = composition&#xa;Open diamond = aggregation/shared reference&#xa;Hollow triangle = inheritance&#xa;Dashed open arrow = dependency&#xa;Visibility: + public, # protected, - private" style="shape=note;whiteSpace=wrap;html=1;size=18;fillColor=#F7F9FB;strokeColor=#7A8793;fontSize=13;align=left;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="2010" y="950" width="420" height="190" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram id="entities" name="2 - Entity Model">
+    <mxGraphModel dx="3200" dy="2200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3200" pageHeight="2200" math="0" shadow="0">
+      <root>
+        <mxCell id="e0"/>
+        <mxCell id="e1" parent="e0"/>
+
+        <mxCell id="eTitle" value="SpaceshooterHD - UML Entity Model" style="text;html=1;align=center;verticalAlign=middle;fontSize=28;fontStyle=1;fontColor=#0B2A4A;" vertex="1" parent="e1">
+          <mxGeometry x="950" y="20" width="1300" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="eSubtitle" value="Inheritance, gameplay ownership, animation dependencies, and multiplicities" style="text;html=1;align=center;verticalAlign=middle;fontSize=14;fontColor=#52606D;" vertex="1" parent="e1">
+          <mxGeometry x="950" y="70" width="1300" height="30" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="controllerRef2" value="&lt;b&gt;GameController&lt;/b&gt;&#xa;&lt;i&gt;owner / orchestrator&lt;/i&gt;&#xa;&lt;hr/&gt;- player: PlayerSpaceship&#xa;- enemies: List&lt;EnemySpaceship&gt;&#xa;- asteroids: List&lt;Asteroid&gt;&#xa;- bullets, enemyBullets: List&lt;Bullet&gt;&#xa;- powerUps: List&lt;PowerUp&gt;&#xa;- explosions: List&lt;Explosion&gt;&#xa;- stars: List&lt;Star&gt;" style="swimlane;html=1;whiteSpace=wrap;rounded=0;startSize=30;align=left;verticalAlign=top;spacing=8;fontSize=13;fillColor=#EEF7EE;strokeColor=#4F8A4F;" vertex="1" parent="e1">
+          <mxGeometry x="40" y="180" width="340" height="330" as="geometry"/>
+        </mxCell>
+        <mxCell id="spaceship2" value="&lt;b&gt;&amp;lt;&amp;lt;abstract&amp;gt;&amp;gt; Spaceship&lt;/b&gt;&#xa;&lt;hr/&gt;# x, y: double&#xa;# width, height: int {final}&#xa;# image: BufferedImage {final}&#xa;&lt;hr/&gt;# Spaceship(image, x, y, width, height)&#xa;+ update(deltaTime: double): void {abstract}&#xa;+ render(g: Graphics2D): void&#xa;+ getBounds(): Rectangle&#xa;+ getX/Y(): double&#xa;+ getWidth/Height(): int&#xa;+ getCenterX/Y(): double" style="swimlane;html=1;whiteSpace=wrap;rounded=0;startSize=30;align=left;verticalAlign=top;spacing=8;fontSize=13;fillColor=#F3ECFA;strokeColor=#714C7D;" vertex="1" parent="e1">
+          <mxGeometry x="1350" y="140" width="390" height="360" as="geometry"/>
+        </mxCell>
+        <mxCell id="player2" value="&lt;b&gt;PlayerSpaceship&lt;/b&gt;&#xa;&lt;i&gt;extends Spaceship&lt;/i&gt;&#xa;&lt;hr/&gt;- inputManager: InputManager {final}&#xa;- shipAnimator: ShipAnimator {final}&#xa;- spriteSheet: SpriteSheet {final, optional}&#xa;- panelWidth, panelHeight: int&#xa;- velocityX, velocityY: double&#xa;- bankAngle: double&#xa;- lives: int&#xa;- invulnerabilityRemaining: double&#xa;&lt;hr/&gt;+ PlayerSpaceship(image/sheet, ... )&#xa;+ setViewportSize(width, height): void&#xa;+ update(deltaTime): void&#xa;+ render(g): void&#xa;+ renderAt(g, x, y, width, height): void&#xa;+ getHitbox(): Polygon&#xa;+ takeHit(): void&#xa;+ reset(startX, startY): void&#xa;+ getLives(): int&#xa;+ isAlive(): boolean" style="swimlane;html=1;whiteSpace=wrap;rounded=0;startSize=30;align=left;verticalAlign=top;spacing=8;fontSize=13;fillColor=#FFFFFF;strokeColor=#714C7D;" vertex="1" parent="e1">
+          <mxGeometry x="890" y="650" width="420" height="520" as="geometry"/>
+        </mxCell>
+        <mxCell id="enemy2" value="&lt;b&gt;&amp;lt;&amp;lt;abstract&amp;gt;&amp;gt; EnemySpaceship&lt;/b&gt;&#xa;&lt;i&gt;extends Spaceship&lt;/i&gt;&#xa;&lt;hr/&gt;- speed: double {final}&#xa;- shootCooldownSeconds: double {final}&#xa;# random: Random {final}&#xa;- shootCooldownRemaining: double&#xa;- wantsToShoot: boolean&#xa;- playerYReference: double&#xa;&lt;hr/&gt;# EnemySpaceship(... )&#xa;+ setPlayerYReference(y: double): void&#xa;+ update(deltaTime: double): void&#xa;# decideToShoot(enemyY, playerY): boolean {abstract}&#xa;+ consumeShootRequest(): boolean&#xa;+ isPastLeftEdge(): boolean" style="swimlane;html=1;whiteSpace=wrap;rounded=0;startSize=30;align=left;verticalAlign=top;spacing=8;fontSize=13;fillColor=#FFFFFF;strokeColor=#714C7D;" vertex="1" parent="e1">
+          <mxGeometry x="1780" y="650" width="410" height="430" as="geometry"/>
+        </mxCell>
+        <mxCell id="grunt2" value="&lt;b&gt;GruntEnemyShip&lt;/b&gt;&#xa;&lt;i&gt;extends EnemySpaceship&lt;/i&gt;&#xa;&lt;hr/&gt;- SPEED: double {static, final}&#xa;- SHOOT_COOLDOWN_SECONDS: double&#xa;- ALIGNMENT_TOLERANCE_PIXELS: int&#xa;- RANDOM_SHOOT_CHANCE: double&#xa;&lt;hr/&gt;+ GruntEnemyShip(... )&#xa;# decideToShoot(enemyY, playerY): boolean&#xa;+ render(g: Graphics2D): void" style="swimlane;html=1;whiteSpace=wrap;rounded=0;startSize=30;align=left;verticalAlign=top;spacing=8;fontSize=13;fillColor=#FFFFFF;strokeColor=#714C7D;" vertex="1" parent="e1">
+          <mxGeometry x="1560" y="1270" width="330" height="310" as="geometry"/>
+        </mxCell>
+        <mxCell id="elite2" value="&lt;b&gt;EliteEnemyShip&lt;/b&gt;&#xa;&lt;i&gt;extends EnemySpaceship&lt;/i&gt;&#xa;&lt;hr/&gt;- SPEED: double {static, final}&#xa;- SHOOT_COOLDOWN_SECONDS: double&#xa;- ALIGNMENT_TOLERANCE_PIXELS: int&#xa;&lt;hr/&gt;+ EliteEnemyShip(... )&#xa;# decideToShoot(enemyY, playerY): boolean&#xa;+ render(g: Graphics2D): void" style="swimlane;html=1;whiteSpace=wrap;rounded=0;startSize=30;align=left;verticalAlign=top;spacing=8;fontSize=13;fillColor=#FFFFFF;strokeColor=#714C7D;" vertex="1" parent="e1">
+          <mxGeometry x="1960" y="1270" width="330" height="290" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="asteroid2" value="&lt;b&gt;Asteroid&lt;/b&gt;&#xa;&lt;hr/&gt;- image: BufferedImage {final}&#xa;- x, y: double&#xa;- velocityX: double {final}&#xa;- velocityY: double&#xa;- diameter: int {final}&#xa;- collisionGraceRemaining: double&#xa;&lt;hr/&gt;+ Asteroid(... )&#xa;+ update(deltaTime, panelHeight): void&#xa;+ render(g): void&#xa;+ getBounds(): Rectangle&#xa;+ isPastLeftEdge(): boolean&#xa;+ canCollideWithAsteroids(): boolean&#xa;+ canSplit(): boolean&#xa;+ getFragmentSize(): int&#xa;+ getCenter/Velocity...(): double" style="swimlane;html=1;whiteSpace=wrap;rounded=0;startSize=30;align=left;verticalAlign=top;spacing=8;fontSize=13;fillColor=#FFFFFF;strokeColor=#9673A6;" vertex="1" parent="e1">
+          <mxGeometry x="40" y="650" width="350" height="430" as="geometry"/>
+        </mxCell>
+        <mxCell id="bullet2" value="&lt;b&gt;Bullet&lt;/b&gt;&#xa;&lt;hr/&gt;- WIDTH, HEIGHT: int {static, final}&#xa;- x, y: double&#xa;- velocityX, velocityY: double {final}&#xa;- color: Color {final}&#xa;&lt;hr/&gt;+ Bullet(x, y, velocityX, velocityY[, color])&#xa;+ update(deltaTime): void&#xa;+ render(g): void&#xa;+ getBounds(): Rectangle&#xa;+ isOffScreen(width, height): boolean&#xa;+ getHeight(): int {static}" style="swimlane;html=1;whiteSpace=wrap;rounded=0;startSize=30;align=left;verticalAlign=top;spacing=8;fontSize=13;fillColor=#FFFFFF;strokeColor=#9673A6;" vertex="1" parent="e1">
+          <mxGeometry x="430" y="650" width="350" height="340" as="geometry"/>
+        </mxCell>
+        <mxCell id="power2" value="&lt;b&gt;PowerUp&lt;/b&gt;&#xa;&lt;hr/&gt;- SIZE: int {static, final}&#xa;- DRIFT_SPEED: double {static, final}&#xa;- x, y: double&#xa;&lt;hr/&gt;+ PowerUp(x, y)&#xa;+ update(deltaTime): void&#xa;+ render(g): void&#xa;+ getBounds(): Rectangle&#xa;+ isPastLeftEdge(): boolean" style="swimlane;html=1;whiteSpace=wrap;rounded=0;startSize=30;align=left;verticalAlign=top;spacing=8;fontSize=13;fillColor=#FFFFFF;strokeColor=#9673A6;" vertex="1" parent="e1">
+          <mxGeometry x="40" y="1180" width="320" height="270" as="geometry"/>
+        </mxCell>
+        <mxCell id="explosion2" value="&lt;b&gt;Explosion&lt;/b&gt;&#xa;&lt;hr/&gt;- DURATION_SECONDS: double {static, final}&#xa;- PARTICLE_COUNT: int {static, final}&#xa;- particles: Particle[14] {final}&#xa;- elapsedSeconds: double&#xa;&lt;hr/&gt;+ Explosion(centerX, centerY, random)&#xa;+ update(deltaTime): void&#xa;+ render(g): void&#xa;+ isFinished(): boolean" style="swimlane;html=1;whiteSpace=wrap;rounded=0;startSize=30;align=left;verticalAlign=top;spacing=8;fontSize=13;fillColor=#FFFFFF;strokeColor=#9673A6;" vertex="1" parent="e1">
+          <mxGeometry x="400" y="1180" width="350" height="300" as="geometry"/>
+        </mxCell>
+        <mxCell id="particle2" value="&lt;b&gt;Particle&lt;/b&gt;&#xa;&lt;i&gt;private static nested class&lt;/i&gt;&#xa;&lt;hr/&gt;- x, y: double&#xa;- velocityX, velocityY: double {final}&#xa;- size: int {final}&#xa;- color: Color {final}&#xa;&lt;hr/&gt;- Particle(... )" style="swimlane;html=1;whiteSpace=wrap;rounded=0;startSize=30;align=left;verticalAlign=top;spacing=8;fontSize=13;fillColor=#FBF8FF;strokeColor=#9673A6;" vertex="1" parent="e1">
+          <mxGeometry x="400" y="1590" width="350" height="260" as="geometry"/>
+        </mxCell>
+        <mxCell id="star2" value="&lt;b&gt;Star&lt;/b&gt;&#xa;&lt;hr/&gt;- x: double&#xa;- y: double {final}&#xa;- speed: double {final}&#xa;- size: int {final}&#xa;&lt;hr/&gt;+ Star(x, y, speed, size)&#xa;+ update(deltaTime): void&#xa;+ render(g): void&#xa;+ isPastLeftEdge(): boolean" style="swimlane;html=1;whiteSpace=wrap;rounded=0;startSize=30;align=left;verticalAlign=top;spacing=8;fontSize=13;fillColor=#FFFFFF;strokeColor=#9673A6;" vertex="1" parent="e1">
+          <mxGeometry x="40" y="1580" width="300" height="260" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="inputRef2" value="&lt;b&gt;InputManager&lt;/b&gt;&#xa;&lt;i&gt;shared input service&lt;/i&gt;" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#FFF5E6;strokeColor=#C47E1B;fontStyle=1;fontSize=14;" vertex="1" parent="e1">
+          <mxGeometry x="2450" y="650" width="260" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="sheetRef2" value="&lt;b&gt;SpriteSheet&lt;/b&gt;&#xa;&lt;i&gt;optional animation frames&lt;/i&gt;" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#FFF5E6;strokeColor=#C47E1B;fontStyle=1;fontSize=14;" vertex="1" parent="e1">
+          <mxGeometry x="2450" y="800" width="260" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="animatorRef2" value="&lt;b&gt;ShipAnimator&lt;/b&gt;&#xa;&lt;i&gt;owned animation state&lt;/i&gt;" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#FFF5E6;strokeColor=#C47E1B;fontStyle=1;fontSize=14;" vertex="1" parent="e1">
+          <mxGeometry x="2450" y="950" width="260" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="inhPlayer" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=0;strokeWidth=2;strokeColor=#5A3D66;" edge="1" parent="e1" source="player2" target="spaceship2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="inhEnemy" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=0;strokeWidth=2;strokeColor=#5A3D66;" edge="1" parent="e1" source="enemy2" target="spaceship2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="inhGrunt" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=0;strokeWidth=2;strokeColor=#5A3D66;" edge="1" parent="e1" source="grunt2" target="enemy2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="inhElite" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=0;strokeWidth=2;strokeColor=#5A3D66;" edge="1" parent="e1" source="elite2" target="enemy2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ownPlayer2" value="1 owner / 1 player" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeColor=#356B35;fontSize=12;" edge="1" parent="e1" source="controllerRef2" target="player2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ownEnemy2" value="1 / 0..*" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeColor=#356B35;fontSize=12;" edge="1" parent="e1" source="controllerRef2" target="enemy2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ownAsteroid2" value="1 / 0..*" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeColor=#356B35;fontSize=12;" edge="1" parent="e1" source="controllerRef2" target="asteroid2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ownBullet2" value="1 / 0..*" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeColor=#356B35;fontSize=12;" edge="1" parent="e1" source="controllerRef2" target="bullet2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ownPower2" value="1 / 0..*" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeColor=#356B35;fontSize=12;" edge="1" parent="e1" source="controllerRef2" target="power2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ownExplosion2" value="1 / 0..*" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeColor=#356B35;fontSize=12;" edge="1" parent="e1" source="controllerRef2" target="explosion2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ownStar2" value="1 / 120" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeColor=#356B35;fontSize=12;" edge="1" parent="e1" source="controllerRef2" target="star2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ownParticle2" value="1 / 14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeColor=#714C7D;fontSize=12;" edge="1" parent="e1" source="explosion2" target="particle2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="playerInput2" value="uses shared 1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamondThin;startFill=0;endArrow=none;dashed=1;strokeColor=#666666;fontSize=12;" edge="1" parent="e1" source="player2" target="inputRef2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="playerSheet2" value="0..1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamondThin;startFill=0;endArrow=none;dashed=1;strokeColor=#666666;fontSize=12;" edge="1" parent="e1" source="player2" target="sheetRef2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="playerAnimator2" value="1 composes 1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeColor=#666666;fontSize=12;" edge="1" parent="e1" source="player2" target="animatorRef2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="entityLegend" value="&lt;b&gt;Relationship semantics&lt;/b&gt;&#xa;GameController owns the player and gameplay collections.&#xa;Enemy polymorphism occurs through List&lt;EnemySpaceship&gt;.&#xa;PlayerSpaceship creates ShipAnimator, but receives InputManager and optional SpriteSheet references.&#xa;Explosion owns exactly 14 nested Particle objects." style="shape=note;whiteSpace=wrap;html=1;size=18;fillColor=#F7F9FB;strokeColor=#7A8793;fontSize=13;align=left;spacing=8;" vertex="1" parent="e1">
+          <mxGeometry x="2420" y="1240" width="500" height="230" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

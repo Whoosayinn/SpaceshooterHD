@@ -2,7 +2,17 @@ package com.r3m.spaceshooter.application;
 
 import java.util.Scanner;
 
+/** Command-line and Swing entry point for Space Shooter HD. */
 public class Main {
+    /** Creates an application launcher. */
+    public Main() {
+    }
+
+    /**
+     * Opens the game window and presents the terminal menu.
+     *
+     * @param args command-line arguments; currently ignored
+     */
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         GameFrame window = new GameFrame();

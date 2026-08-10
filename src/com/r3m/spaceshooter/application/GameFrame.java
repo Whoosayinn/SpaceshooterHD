@@ -7,13 +7,20 @@ import javax.swing.KeyStroke;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
 
-
+/**
+ * Top-level Swing window for Space Shooter HD.
+ *
+ * <p>The frame owns the {@link GamePanel} and forwards application-level
+ * navigation requests to it.</p>
+ */
 public class GameFrame extends JFrame {
     private static final int WINDOW_WIDTH = 960;
     private static final int WINDOW_HEIGHT = 640;
 
+    /** Game surface hosted by this serializable frame. */
     private final GamePanel gamePanel;
 
+    /** Creates and centers a fixed-size game window. */
     public GameFrame() {
         setTitle("Space Shooter HD");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -31,27 +38,33 @@ public class GameFrame extends JFrame {
         setLocationRelativeTo(null);
     }
 
+    /** Starts the panel's game loop. */
     public void startGame() {
         gamePanel.startGame();
     }
 
+    /** Starts a new gameplay session and brings the window to the front. */
     public void beginGameplay() {
         gamePanel.beginGameplay();
         toFront();
     }
 
+    /** Displays the main menu. */
     public void showMainMenu() {
         gamePanel.showMainMenu();
     }
 
+    /** Displays the instructions page. */
     public void showInstructions() {
         gamePanel.showInstructions();
     }
 
+    /** Displays the controls page. */
     public void showControls() {
         gamePanel.showControls();
     }
 
+    /** Stops the game loop and disposes of the window. */
     public void closeGame() {
         gamePanel.stopGame();
         dispose();

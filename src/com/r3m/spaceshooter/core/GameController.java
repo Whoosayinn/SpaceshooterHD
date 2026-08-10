@@ -31,6 +31,13 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+/**
+ * Coordinates game state, entity updates, collisions, scoring, and rendering.
+ *
+ * <p>The controller receives frame timing from {@link GamePanel} and delegates
+ * input, collision detection, assets, scoring, and menu drawing to specialized
+ * collaborators. It does not own the application window or game-loop thread.</p>
+ */
 public class GameController {
 	/**
 	 * GameController is the brain of the game.
@@ -254,6 +261,13 @@ public class GameController {
         }
     }
 
+    /**
+     * Updates the active viewport used for spawning and boundary checks.
+     * Non-positive dimensions are ignored.
+     *
+     * @param width viewport width in pixels
+     * @param height viewport height in pixels
+     */
     public void setViewportSize(int width, int height) {
         if (width <= 0 || height <= 0) {
             return;
@@ -296,6 +310,7 @@ public class GameController {
         }
     }
 
+    /** Resets all session state and starts a new game. */
     public void beginGameplay() {
         player.reset(200, panelHeight / 2.0 - PLAYER_HEIGHT / 2.0);
         scoreManager.reset();
@@ -315,14 +330,17 @@ public class GameController {
         gameState = GameState.PLAYING;
     }
 
+    /** Switches to the main-menu state. */
     public void showMainMenu() {
         gameState = GameState.MENU;
     }
 
+    /** Switches to the instructions state. */
     public void showInstructions() {
         gameState = GameState.INSTRUCTIONS;
     }
 
+    /** Switches to the controls state. */
     public void showControls() {
         gameState = GameState.CONTROLS;
     }

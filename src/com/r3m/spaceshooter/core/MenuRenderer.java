@@ -33,6 +33,14 @@ public class MenuRenderer {
     private int panelWidth;
     private int panelHeight;
 
+    /**
+     * Creates a renderer for the supplied preview assets and viewport.
+     *
+     * @param player player ship used in animated menu previews
+     * @param asteroidImage asteroid decoration image; may be {@code null}
+     * @param panelWidth viewport width in pixels
+     * @param panelHeight viewport height in pixels
+     */
     public MenuRenderer(PlayerSpaceship player, BufferedImage asteroidImage,
                         int panelWidth, int panelHeight) {
         this.player       = player;
@@ -41,11 +49,22 @@ public class MenuRenderer {
         this.panelHeight  = panelHeight;
     }
 
+    /**
+     * Updates the dimensions used to position menu elements.
+     *
+     * @param width viewport width in pixels
+     * @param height viewport height in pixels
+     */
     public void setViewportSize(int width, int height) {
         this.panelWidth  = width;
         this.panelHeight = height;
     }
 
+    /**
+     * Fills the viewport with the game's space gradient.
+     *
+     * @param g destination graphics context
+     */
     public void renderSpaceBackground(Graphics2D g) {
         Paint oldPaint = g.getPaint();
         g.setPaint(new GradientPaint(
@@ -56,6 +75,12 @@ public class MenuRenderer {
         g.setPaint(oldPaint);
     }
 
+    /**
+     * Renders the animated main menu and its options.
+     *
+     * @param g destination graphics context
+     * @param animationTime elapsed menu-animation time in seconds
+     */
     public void renderMainMenu(Graphics2D g, double animationTime) {
         renderMenuDecorations(g, animationTime);
 
@@ -98,6 +123,11 @@ public class MenuRenderer {
         drawCenteredString(g, "PRESS 1 - 4 HERE  OR  TYPE IT IN THE TERMINAL", optionY + 28);
     }
 
+    /**
+     * Renders the gameplay instructions page.
+     *
+     * @param g destination graphics context
+     */
     public void renderInstructionsPage(Graphics2D g) {
         renderInformationPage(g, "INSTRUCTIONS", new String[] {
             "Pilot your spaceship through the asteroid field.",
@@ -107,6 +137,11 @@ public class MenuRenderer {
         });
     }
 
+    /**
+     * Renders the keyboard-controls page.
+     *
+     * @param g destination graphics context
+     */
     public void renderControlsPage(Graphics2D g) {
         renderInformationPage(g, "VIEW CONTROLS", new String[] {
             "W  -  MOVE UP",
@@ -118,6 +153,14 @@ public class MenuRenderer {
         });
     }
 
+    /**
+     * Renders the fading game-over overlay and replay options.
+     *
+     * @param g destination graphics context
+     * @param gameOverFade normalized overlay fade from {@code 0.0} to {@code 1.0}
+     * @param animationTime elapsed animation time in seconds
+     * @param score final score to display
+     */
     public void renderGameOverScreen(Graphics2D g, double gameOverFade,
                                      double animationTime, int score) {
         // dark overlay fades in

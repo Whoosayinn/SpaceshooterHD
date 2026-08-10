@@ -16,6 +16,16 @@ public class EliteEnemyShip extends EnemySpaceship {
     private static final double SHOOT_COOLDOWN_SECONDS = 0.6;
     private static final int ALIGNMENT_TOLERANCE_PIXELS = 14;
 
+    /**
+     * Creates an elite enemy ship.
+     *
+     * @param image enemy sprite; may be {@code null}
+     * @param x initial horizontal position
+     * @param y initial vertical position
+     * @param width rendered width in pixels
+     * @param height rendered height in pixels
+     * @param random random source shared with enemy AI
+     */
     public EliteEnemyShip(BufferedImage image, double x, double y, int width, int height, Random random) {
         super(image, x, y, width, height, SPEED, SHOOT_COOLDOWN_SECONDS, random);
     }

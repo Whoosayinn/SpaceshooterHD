@@ -20,10 +20,27 @@ public class Bullet {
     private double x;
     private double y;
 
+    /**
+     * Creates a yellow bullet.
+     *
+     * @param x initial horizontal position
+     * @param y initial vertical position
+     * @param velocityX horizontal velocity in pixels per second
+     * @param velocityY vertical velocity in pixels per second
+     */
     public Bullet(double x, double y, double velocityX, double velocityY) {
         this(x, y, velocityX, velocityY, Color.YELLOW);
     }
 
+    /**
+     * Creates a bullet with the requested color.
+     *
+     * @param x initial horizontal position
+     * @param y initial vertical position
+     * @param velocityX horizontal velocity in pixels per second
+     * @param velocityY vertical velocity in pixels per second
+     * @param color bullet color
+     */
     public Bullet(double x, double y, double velocityX, double velocityY, Color color) {
         this.x = x;
         this.y = y;
@@ -32,26 +49,41 @@ public class Bullet {
         this.color = color;
     }
 
+    /** Advances the bullet.
+     * @param deltaTime elapsed frame time in seconds */
     public void update(double deltaTime) {
         x += velocityX * deltaTime;
         y += velocityY * deltaTime;
     }
 
+    /** Draws the bullet.
+     * @param graphics destination graphics context */
     public void render(Graphics2D graphics) {
         graphics.setColor(color);
         graphics.fillRect((int) x, (int) y, WIDTH, HEIGHT);
     }
 
+    /** Returns the collision bounds.
+     * @return rectangular bullet bounds */
     public Rectangle getBounds() {
         return new Rectangle((int) x, (int) y, WIDTH, HEIGHT);
     }
 
     // now checks all four edges, since angled bullets can leave through
     // the top or bottom of the screen, not just the right side
+    /**
+     * Tests whether the bullet has left any viewport edge.
+     *
+     * @param panelWidth viewport width in pixels
+     * @param panelHeight viewport height in pixels
+     * @return {@code true} when the bullet is outside the viewport
+     */
     public boolean isOffScreen(int panelWidth, int panelHeight) {
         return x > panelWidth || x < -WIDTH || y < -HEIGHT || y > panelHeight;
     }
 
+    /** Returns the fixed bullet height.
+     * @return bullet height in pixels */
     public static int getHeight() {
         return HEIGHT;
     }
