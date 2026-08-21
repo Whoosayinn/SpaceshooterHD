@@ -1,13 +1,12 @@
 package com.r3m.spaceshooter.core;
 
 import com.r3m.spaceshooter.system.InputManager;
-import com.r3m.spaceshooter.core.GameClock;
-import javax.swing.JPanel;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import javax.swing.JPanel;
 
 /**
  * GamePanel is the main game surface — it extends JPanel so it can
