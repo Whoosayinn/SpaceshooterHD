@@ -17,15 +17,25 @@ public class PowerUp {
     private double x;
     private double y;
 
+    /**
+     * Creates a power-up at the requested position.
+     *
+     * @param x initial horizontal position
+     * @param y initial vertical position
+     */
     public PowerUp(double x, double y) {
         this.x = x;
         this.y = y;
     }
 
+    /** Advances the pickup.
+     * @param deltaTime elapsed frame time in seconds */
     public void update(double deltaTime) {
         x -= DRIFT_SPEED * deltaTime;
     }
 
+    /** Draws the pickup.
+     * @param graphics destination graphics context */
     public void render(Graphics2D graphics) {
         graphics.setColor(new Color(80, 220, 255));
         int[] xPoints = {(int) x + SIZE / 2, (int) x + SIZE, (int) x + SIZE / 2, (int) x};
@@ -37,10 +47,14 @@ public class PowerUp {
         graphics.drawString("S", (int) x + SIZE / 2 - 4, (int) y + SIZE / 2 + 5);
     }
 
+    /** Returns the collision bounds.
+     * @return rectangular pickup bounds */
     public Rectangle getBounds() {
         return new Rectangle((int) x, (int) y, SIZE, SIZE);
     }
 
+    /** Tests the left removal boundary.
+     * @return whether the pickup is left of the viewport */
     public boolean isPastLeftEdge() {
         return x + SIZE < 0;
     }

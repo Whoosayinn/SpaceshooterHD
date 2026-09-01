@@ -13,6 +13,13 @@ public class Explosion {
     private final Particle[] particles = new Particle[PARTICLE_COUNT];
     private double elapsedSeconds;
 
+    /**
+     * Creates a randomized radial particle burst.
+     *
+     * @param centerX horizontal burst center
+     * @param centerY vertical burst center
+     * @param random random source for particle direction, speed, and size
+     */
     public Explosion(double centerX, double centerY, Random random) {
         for (int i = 0; i < particles.length; i++) {
             double angle = random.nextDouble() * Math.PI * 2.0;
@@ -30,6 +37,11 @@ public class Explosion {
         }
     }
 
+    /**
+     * Advances every particle.
+     *
+     * @param deltaTime elapsed frame time in seconds
+     */
     public void update(double deltaTime) {
         elapsedSeconds += deltaTime;
         for (Particle particle : particles) {
@@ -38,6 +50,11 @@ public class Explosion {
         }
     }
 
+    /**
+     * Draws all particles with an age-based fade.
+     *
+     * @param graphics destination graphics context
+     */
     public void render(Graphics2D graphics) {
         float alpha = (float) Math.max(0.0, 1.0 - elapsedSeconds / DURATION_SECONDS);
         Graphics2D effectGraphics = (Graphics2D) graphics.create();
@@ -56,6 +73,8 @@ public class Explosion {
         effectGraphics.dispose();
     }
 
+    /** Tests whether the effect can be removed.
+     * @return whether the display duration has elapsed */
     public boolean isFinished() {
         return elapsedSeconds >= DURATION_SECONDS;
     }

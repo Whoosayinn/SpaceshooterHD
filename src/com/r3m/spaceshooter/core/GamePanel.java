@@ -1,13 +1,12 @@
 package com.r3m.spaceshooter.core;
 
 import com.r3m.spaceshooter.system.InputManager;
-import com.r3m.spaceshooter.core.GameClock;
-import javax.swing.JPanel;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import javax.swing.JPanel;
 
 /**
  * GamePanel is the main game surface — it extends JPanel so it can
@@ -37,21 +36,26 @@ public class GamePanel extends JPanel implements Runnable {
     // the dedicated thread that runs the game loop
     // separate from Swing's Event Dispatch Thread for precise timing
     private static final long NANOSECONDS_PER_FRAME = 1_000_000_000L / TARGET_FPS;
+    /** Dedicated update-loop thread. */
     private Thread gameThread;
     
     // flag that controls whether the game loop keeps running
     // setting this to false cleanly stops the loop on its next cycle
+    /** Whether the update loop should continue. */
     private boolean running = false;
     
     // --- CORE DEPENDENCIES ---
 
     // handles all game logic — updating positions, collision, score
+    /** Controller responsible for game state and rendering. */
     private final GameController gameController;
     
     // listens to keyboard events and tracks which keys are held
+    /** Keyboard-state tracker attached to this panel. */
     private final InputManager inputManager;
     
     // handles all frame timing — waits between frames, returns deltaTime
+    /** Frame-rate regulator used by the update loop. */
     private final GameClock gameClock;
     
 
@@ -63,6 +67,12 @@ public class GamePanel extends JPanel implements Runnable {
         this(DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT);
     }
 
+    /**
+     * Creates a game panel with the requested viewport dimensions.
+     *
+     * @param screenWidth preferred panel width in pixels
+     * @param screenHeight preferred panel height in pixels
+     */
     public GamePanel(int screenWidth, int screenHeight) {
     	
         // without this, addKeyListener won't work reliably
@@ -90,6 +100,7 @@ public class GamePanel extends JPanel implements Runnable {
     }
 
 
+    /** Requests keyboard focus and starts the game loop on a dedicated thread. */
     public void startGame() {
         /**
          * Starts the game — called from GameFrame after the window is visible.
@@ -108,6 +119,7 @@ public class GamePanel extends JPanel implements Runnable {
         gameThread.start();
     }
 
+    /** Stops the game loop and waits for its thread to finish. */
     public void stopGame() {
         /**
          * Stops the game loop cleanly.
@@ -126,23 +138,28 @@ public class GamePanel extends JPanel implements Runnable {
     	}
     }
 
+    /** Starts a fresh gameplay session and restores keyboard focus. */
     public void beginGameplay() {
         gameController.beginGameplay();
         requestFocusInWindow();
     }
 
+    /** Switches the controller to the main menu. */
     public void showMainMenu() {
         gameController.showMainMenu();
     }
 
+    /** Switches the controller to the instructions page. */
     public void showInstructions() {
         gameController.showInstructions();
     }
 
+    /** Switches the controller to the controls page. */
     public void showControls() {
         gameController.showControls();
     }
 
+    /** Runs the timed update-and-repaint loop until {@link #stopGame()} is called. */
     @Override
     public void run() {
         /**
@@ -186,6 +203,11 @@ public class GamePanel extends JPanel implements Runnable {
             }
         }
     }
+    /**
+     * Clears and renders the current game frame with antialiasing enabled.
+     *
+     * @param g graphics context supplied by Swing
+     */
     @Override
     protected void paintComponent(Graphics g) {
     	

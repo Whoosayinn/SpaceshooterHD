@@ -10,9 +10,15 @@ import java.util.Map;
     private static AssetManager instance;
     private final Map<String, BufferedImage> images = new HashMap<>();
 
+    /** Creates an independent image cache. Prefer {@link #getInstance()}. */
     public AssetManager() {}
 
     /** * Creates a new {@code AssetManager}. * * <p>This constructor is public, although the class is intended to be * accessed through the {@link #getInstance()} method.</p> *//** * Creates a new {@code AssetManager}. * * <p>This constructor is public, although the class is intended to be * accessed through the {@link #getInstance()} method.</p> */
+    /**
+     * Returns the process-wide asset manager, creating it on first use.
+     *
+     * @return shared asset manager
+     */
     public static AssetManager getInstance() {
         if (instance == null) {
             instance = new AssetManager();
@@ -21,6 +27,12 @@ import java.util.Map;
     }
 
     /** * Loads an image from the specified resource path. * * <p>If the image has already been loaded, the cached image is returned * instead of loading it again. This reduces unnecessary resource access * and improves performance when the same image is requested multiple * times.</p> * * <p>If the image cannot be loaded because an I/O error occurs, an error * message is printed to the standard error stream and {@code null} is * returned.</p> * * @param path the classpath resource path of the image to load * @return the loaded {@link BufferedImage}, or {@code null} if the image * could not be loaded */
+    /**
+     * Loads and caches an image from a classpath resource.
+     *
+     * @param path absolute classpath resource path
+     * @return loaded image, or {@code null} when loading fails
+     */
     public BufferedImage loadImage(String path) {
         if (images.containsKey(path)) return images.get(path);
         try {
@@ -41,4 +53,4 @@ import java.util.Map;
 
 // shooting mechanism of enemy, always check for y axis, if player flew on enemy
 // y-axis enemy shoots, otherwise give enemy 1-4 out of 10 chance to shoot randomly
-// always check for x axis aswell, if it passes 0 or - 10 remove the space ship 
+// always check for x axis aswell, if it passes 0 or - 10 remove the space ship

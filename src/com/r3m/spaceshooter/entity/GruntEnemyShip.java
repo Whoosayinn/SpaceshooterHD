@@ -17,6 +17,16 @@ public class GruntEnemyShip extends EnemySpaceship {
     private static final int ALIGNMENT_TOLERANCE_PIXELS = 20;
     private static final double RANDOM_SHOOT_CHANCE = 0.25; // ~1-4 out of 10
 
+    /**
+     * Creates a grunt enemy ship.
+     *
+     * @param image enemy sprite; may be {@code null}
+     * @param x initial horizontal position
+     * @param y initial vertical position
+     * @param width rendered width in pixels
+     * @param height rendered height in pixels
+     * @param random random source used by its shooting strategy
+     */
     public GruntEnemyShip(BufferedImage image, double x, double y, int width, int height, Random random) {
         super(image, x, y, width, height, SPEED, SHOOT_COOLDOWN_SECONDS, random);
     }

@@ -55,6 +55,18 @@ public class PlayerSpaceship extends Spaceship {
      * Constructor without spritesheet — uses the single image from Spaceship base class.
      * Use this if you only have one static ship image.
      */
+    /**
+     * Creates a player using a single static ship image.
+     *
+     * @param image static ship sprite
+     * @param x initial horizontal position
+     * @param y initial vertical position
+     * @param width rendered width in pixels
+     * @param height rendered height in pixels
+     * @param inputManager keyboard input source
+     * @param panelWidth viewport width in pixels
+     * @param panelHeight viewport height in pixels
+     */
     public PlayerSpaceship(BufferedImage image, double x, double y, int width, int height,
                             InputManager inputManager, int panelWidth, int panelHeight) {
         super(image, x, y, width, height);
@@ -68,6 +80,18 @@ public class PlayerSpaceship extends Spaceship {
     /**
      * Constructor WITH spritesheet — uses animated 25-frame sprite cycling.
      * Use this when you have SPRITE-2.png loaded and sliced.
+     */
+    /**
+     * Creates a player using animated sprite-sheet frames.
+     *
+     * @param spriteSheet animated ship frames
+     * @param x initial horizontal position
+     * @param y initial vertical position
+     * @param width rendered width in pixels
+     * @param height rendered height in pixels
+     * @param inputManager keyboard input source
+     * @param panelWidth viewport width in pixels
+     * @param panelHeight viewport height in pixels
      */
     public PlayerSpaceship(SpriteSheet spriteSheet, double x, double y,
                            int width, int height,
@@ -83,6 +107,12 @@ public class PlayerSpaceship extends Spaceship {
     }
     
     /** GameController calls this whenever the window is resized. */
+    /**
+     * Updates the movement boundaries after a viewport change.
+     *
+     * @param panelWidth viewport width in pixels
+     * @param panelHeight viewport height in pixels
+     */
     public void setViewportSize(int panelWidth, int panelHeight) {
         this.panelWidth = panelWidth;
         this.panelHeight = panelHeight;
@@ -176,6 +206,15 @@ public class PlayerSpaceship extends Spaceship {
     }
 
     /** Draws the current ship frame at a custom location for menu previews. */
+    /**
+     * Draws the current ship frame at a custom location for menu previews.
+     *
+     * @param g destination graphics context
+     * @param drawX horizontal draw position
+     * @param drawY vertical draw position
+     * @param drawWidth draw width in pixels
+     * @param drawHeight draw height in pixels
+     */
     public void renderAt(Graphics2D g, int drawX, int drawY, int drawWidth, int drawHeight) {
         if (spriteSheet != null) {
             BufferedImage frame = spriteSheet.getFrame(shipAnimator.getCurrentFrameIndex());
@@ -185,7 +224,8 @@ public class PlayerSpaceship extends Spaceship {
         }
     }
 
-    // Hitbox is a triangle //
+    /** Returns the player's collision shape.
+     * @return triangular player collision shape */
     public Polygon getHitbox() {
         int left = (int) x + HITBOX_INSET;
         int right = (int) x + width - HITBOX_INSET;
@@ -200,6 +240,7 @@ public class PlayerSpaceship extends Spaceship {
         );
     }
 
+    /** Removes one life unless the player is dead or currently invulnerable. */
     public void takeHit() {
         if (invulnerabilityRemaining > 0.0 || lives == 0) {
             return;
@@ -209,6 +250,12 @@ public class PlayerSpaceship extends Spaceship {
     }
 
     /** Restores the player to a fresh state for a new or replayed game. */
+    /**
+     * Restores the player to a fresh state for a new or replayed game.
+     *
+     * @param startX reset horizontal position
+     * @param startY reset vertical position
+     */
     public void reset(double startX, double startY) {
         x = startX;
         y = startY;
@@ -219,6 +266,10 @@ public class PlayerSpaceship extends Spaceship {
         invulnerabilityRemaining = 0;
     }
 
+    /** Returns the player's lives.
+     * @return remaining lives */
     public int getLives() { return lives; }
+    /** Reports whether the player can continue.
+     * @return whether at least one life remains */
     public boolean isAlive() { return lives > 0; }
 }

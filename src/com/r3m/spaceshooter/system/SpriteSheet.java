@@ -63,7 +63,8 @@ public class SpriteSheet {
 
     /**
      * Returns a specific frame by index (0-based)
-     * @param index 0 = first sprite, 24 = last sprite
+     * @param index zero-based frame index; out-of-range values are clamped
+     * @return extracted frame at the clamped index
      */
     public BufferedImage getFrame(int index) {
         // clamp index to valid range — prevents ArrayIndexOutOfBoundsException
@@ -71,7 +72,13 @@ public class SpriteSheet {
         return frames[clamped];
     }
 
+    /** Returns the frame count.
+     * @return number of frames in the sheet */
     public int getTotalFrames() { return frames.length; }
+    /** Returns the frame width.
+     * @return width of one sprite in pixels */
     public int getSpriteWidth()  { return spriteWidth; }
+    /** Returns the frame height.
+     * @return height of one sprite in pixels */
     public int getSpriteHeight() { return spriteHeight; }
 }

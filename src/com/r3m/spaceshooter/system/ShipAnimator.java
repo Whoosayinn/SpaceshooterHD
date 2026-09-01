@@ -19,6 +19,10 @@ package com.r3m.spaceshooter.system;
  */
 public class ShipAnimator {
 
+    /** Creates an animator in its idle state. */
+    public ShipAnimator() {
+    }
+
     // --- ANIMATION ZONES ---
     // each zone is 5 frames wide in the sprite sheet
     private static final int FRAMES_PER_ZONE = 5;
@@ -91,6 +95,8 @@ public class ShipAnimator {
      *
      * Takes the current zone (derived from animationPosition)
      * and adds the current frame offset within that zone.
+     *
+     * @return frame index from 0 through 24
      */
     public int getCurrentFrameIndex() {
         // convert animationPosition to a zone index (0-4)
